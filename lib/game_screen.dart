@@ -26,7 +26,7 @@ class _GameScreenState extends State<GameScreen> {
     Color(0xFFFFFFFF),
     Color(0xFFCE93D8),
     Color(0xFFF44336),
-    Color(0xFFB0C4DE),
+    Color(0xFFFF9800),
     Color(0xFF388E3C),
   ];
 
