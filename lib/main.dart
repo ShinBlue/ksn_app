@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'board_content_store.dart';
 import 'main_menu_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await BoardContentStore.instance.load();
   runApp(const MyApp());
 }
 

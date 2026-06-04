@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart';
+import 'board_content_store.dart';
+import 'board_type.dart';
 import 'sound_service.dart';
 
 class GameScreen extends StatefulWidget {
@@ -17,32 +18,7 @@ class _GameScreenState extends State<GameScreen> {
   String? _winner; // null=進行中, 'O', 'X', 'draw'
 
   final _sound = SoundService();
-
-  static const List<Color> _colors = [
-    Color(0xFF64B5F6),
-    Color(0xFF8BC34A),
-    Color(0xFFFFEB3B),
-    Color(0xFF7B1FA2),
-    Color(0xFFFFFFFF),
-    Color(0xFFCE93D8),
-    Color(0xFFF44336),
-    Color(0xFFFF9800),
-    Color(0xFF388E3C),
-  ];
-
-  static const List<String> _numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
-
-  static const List<String> _texts = [
-    'ガム', 'ゴリラ', 'どんぐり',
-    'オムライス', 'りんご', 'さんご',
-    'かれーらいす', 'ぐらたん', 'たいこ',
-  ];
-
-  static const List<String> _animals = [
-    '🐢', '🐇', '🐈',
-    '🐒', '🐘', '🐳',
-    '🐷', '🐙', '🦐',
-  ];
+  final _store = BoardContentStore.instance;
 
   void _onCellTap(int index) {
     if (_board[index] != 0 || _winner != null) return;
@@ -89,6 +65,9 @@ class _GameScreenState extends State<GameScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = _store.colors();
+    final labels = _store.labels(widget.boardType);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('まるばつゲーム'),
@@ -127,7 +106,12 @@ class _GameScreenState extends State<GameScreen> {
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3),
                       itemCount: 9,
-                      itemBuilder: (_, index) => _buildCell(index, boardSize / 3),
+                      itemBuilder: (_, index) => _buildCell(
+                        index,
+                        boardSize / 3,
+                        colors: colors,
+                        labels: labels,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -177,7 +161,12 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  Widget _buildCell(int index, double cellSize) {
+  Widget _buildCell(
+    int index,
+    double cellSize, {
+    required List<Color> colors,
+    required List<String> labels,
+  }) {
     final player = _board[index];
 
     return GestureDetector(
@@ -189,7 +178,7 @@ class _GameScreenState extends State<GameScreen> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            _buildCellBackground(index, cellSize),
+            _buildCellBackground(index, cellSize, colors: colors, labels: labels),
             if (player != 0)
               Center(
                 child: Text(
@@ -211,25 +200,31 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  Widget _buildCellBackground(int index, double cellSize) {
+  Widget _buildCellBackground(
+    int index,
+    double cellSize, {
+    required List<Color> colors,
+    required List<String> labels,
+  }) {
     switch (widget.boardType) {
       case BoardType.color:
-        return Container(color: _colors[index]);
+        return Container(color: colors[index]);
       case BoardType.number:
-        return Center(
-          child: Text(
-            _numbers[index],
-            style: TextStyle(fontSize: cellSize * 0.35, fontWeight: FontWeight.w500),
-          ),
-        );
       case BoardType.text:
         return Center(
           child: Padding(
             padding: const EdgeInsets.all(4),
             child: FittedBox(
               child: Text(
-                _texts[index],
-                style: TextStyle(fontSize: cellSize * 0.18),
+                labels[index],
+                style: TextStyle(
+                  fontSize: widget.boardType == BoardType.number
+                      ? cellSize * 0.35
+                      : cellSize * 0.18,
+                  fontWeight: widget.boardType == BoardType.number
+                      ? FontWeight.w500
+                      : FontWeight.normal,
+                ),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -238,7 +233,7 @@ class _GameScreenState extends State<GameScreen> {
       case BoardType.animal:
         return Center(
           child: Text(
-            _animals[index],
+            labels[index],
             style: TextStyle(fontSize: cellSize * 0.45),
           ),
         );

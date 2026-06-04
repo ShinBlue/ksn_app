@@ -1,10 +1,41 @@
 import 'package:flutter/material.dart';
+import 'board_content_store.dart';
+import 'board_edit_screen.dart';
+import 'board_preview.dart';
+import 'board_type.dart';
 import 'game_screen.dart';
 
-enum BoardType { color, number, text, animal }
-
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final _store = BoardContentStore.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _store.addListener(_onStoreChanged);
+  }
+
+  @override
+  void dispose() {
+    _store.removeListener(_onStoreChanged);
+    super.dispose();
+  }
+
+  void _onStoreChanged() => setState(() {});
+
+  Future<void> _openEdit(BoardType boardType) async {
+    await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => BoardEditScreen(boardType: boardType)),
+    );
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,34 +57,55 @@ class HomeScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
+                const SizedBox(height: 8),
+                Text(
+                  '鉛筆アイコンから文字・絵・色を変更できます',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                ),
                 const SizedBox(height: 32),
                 _BoardCard(
                   number: '1',
-                  label: 'カラー盤面',
-                  preview: _ColorPreview(),
+                  label: BoardType.color.label,
+                  preview: BoardPreview(
+                    boardType: BoardType.color,
+                    colors: _store.colors(),
+                  ),
                   boardType: BoardType.color,
+                  onEdit: () => _openEdit(BoardType.color),
                 ),
                 const SizedBox(height: 16),
                 _BoardCard(
                   number: '2',
-                  label: '数字盤面',
-                  preview: _TextPreview(['1', '2', '3', '4', '5', '6', '7', '8', '9']),
+                  label: BoardType.number.label,
+                  preview: BoardPreview(
+                    boardType: BoardType.number,
+                    labels: _store.labels(BoardType.number),
+                  ),
                   boardType: BoardType.number,
+                  onEdit: () => _openEdit(BoardType.number),
                 ),
                 const SizedBox(height: 16),
                 _BoardCard(
                   number: '3',
-                  label: 'テキスト盤面',
-                  preview: _TextPreview(
-                      ['ガム', 'ゴリラ', 'どんぐり', 'オムライス', 'りんご', 'さんご', 'かれーらいす', 'ぐらたん', 'たいこ']),
+                  label: BoardType.text.label,
+                  preview: BoardPreview(
+                    boardType: BoardType.text,
+                    labels: _store.labels(BoardType.text),
+                  ),
                   boardType: BoardType.text,
+                  onEdit: () => _openEdit(BoardType.text),
                 ),
                 const SizedBox(height: 16),
                 _BoardCard(
                   number: '4',
-                  label: '動物盤面',
-                  preview: _TextPreview(['🐢', '🐇', '🐈', '🐒', '🐘', '🐳', '🐷', '🐙', '🦐']),
+                  label: BoardType.animal.label,
+                  preview: BoardPreview(
+                    boardType: BoardType.animal,
+                    labels: _store.labels(BoardType.animal),
+                  ),
                   boardType: BoardType.animal,
+                  onEdit: () => _openEdit(BoardType.animal),
                 ),
               ],
             ),
@@ -69,94 +121,58 @@ class _BoardCard extends StatelessWidget {
   final String label;
   final Widget preview;
   final BoardType boardType;
+  final VoidCallback onEdit;
 
   const _BoardCard({
     required this.number,
     required this.label,
     required this.preview,
     required this.boardType,
+    required this.onEdit,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => GameScreen(boardType: boardType)),
-      ),
-      child: Card(
-        elevation: 3,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: Row(
-            children: [
-              SizedBox(width: 80, height: 80, child: preview),
-              const SizedBox(width: 16),
-              Expanded(
+    return Card(
+      elevation: 3,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        child: Row(
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => GameScreen(boardType: boardType)),
+              ),
+              child: SizedBox(width: 80, height: 80, child: preview),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => GameScreen(boardType: boardType)),
+                ),
                 child: Text(
                   '$number. $label',
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios, size: 16),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ColorPreview extends StatelessWidget {
-  static const List<Color> _colors = [
-    Color(0xFF64B5F6),
-    Color(0xFF8BC34A),
-    Color(0xFFFFEB3B),
-    Color(0xFF7B1FA2),
-    Color(0xFFFFFFFF),
-    Color(0xFFCE93D8),
-    Color(0xFFF44336),
-    Color(0xFFFF9800),
-    Color(0xFF388E3C),
-  ];
-
-  const _ColorPreview();
-
-  @override
-  Widget build(BuildContext context) {
-    return GridView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3),
-      itemCount: 9,
-      itemBuilder: (_, i) => Container(
-        decoration: BoxDecoration(
-          color: _colors[i],
-          border: Border.all(color: Colors.grey.shade400, width: 0.5),
-        ),
-      ),
-    );
-  }
-}
-
-class _TextPreview extends StatelessWidget {
-  final List<String> items;
-
-  const _TextPreview(this.items);
-
-  @override
-  Widget build(BuildContext context) {
-    return GridView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3),
-      itemCount: 9,
-      itemBuilder: (_, i) => Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade400, width: 0.5),
-        ),
-        child: Center(
-          child: FittedBox(
-            child: Text(items[i], style: const TextStyle(fontSize: 10)),
-          ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: '盤面を編集',
+              onPressed: onEdit,
+            ),
+            IconButton(
+              icon: const Icon(Icons.play_arrow),
+              tooltip: 'ゲームを始める',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => GameScreen(boardType: boardType)),
+              ),
+            ),
+          ],
         ),
       ),
     );
