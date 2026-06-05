@@ -4,6 +4,7 @@ import 'board_edit_screen.dart';
 import 'board_preview.dart';
 import 'board_type.dart';
 import 'game_screen.dart';
+import 'text_pattern_select_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -35,6 +36,20 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(builder: (_) => BoardEditScreen(boardType: boardType)),
     );
     setState(() {});
+  }
+
+  void _startGame(BoardType boardType) {
+    if (boardType == BoardType.text) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const TextPatternSelectScreen()),
+      );
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => GameScreen(boardType: boardType)),
+    );
   }
 
   @override
@@ -71,8 +86,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     boardType: BoardType.color,
                     colors: _store.colors(),
                   ),
-                  boardType: BoardType.color,
                   onEdit: () => _openEdit(BoardType.color),
+                  onPlay: () => _startGame(BoardType.color),
                 ),
                 const SizedBox(height: 16),
                 _BoardCard(
@@ -82,8 +97,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     boardType: BoardType.number,
                     labels: _store.labels(BoardType.number),
                   ),
-                  boardType: BoardType.number,
                   onEdit: () => _openEdit(BoardType.number),
+                  onPlay: () => _startGame(BoardType.number),
                 ),
                 const SizedBox(height: 16),
                 _BoardCard(
@@ -93,8 +108,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     boardType: BoardType.text,
                     labels: _store.labels(BoardType.text),
                   ),
-                  boardType: BoardType.text,
                   onEdit: () => _openEdit(BoardType.text),
+                  onPlay: () => _startGame(BoardType.text),
                 ),
                 const SizedBox(height: 16),
                 _BoardCard(
@@ -104,8 +119,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     boardType: BoardType.animal,
                     labels: _store.labels(BoardType.animal),
                   ),
-                  boardType: BoardType.animal,
                   onEdit: () => _openEdit(BoardType.animal),
+                  onPlay: () => _startGame(BoardType.animal),
                 ),
               ],
             ),
@@ -120,15 +135,15 @@ class _BoardCard extends StatelessWidget {
   final String number;
   final String label;
   final Widget preview;
-  final BoardType boardType;
   final VoidCallback onEdit;
+  final VoidCallback onPlay;
 
   const _BoardCard({
     required this.number,
     required this.label,
     required this.preview,
-    required this.boardType,
     required this.onEdit,
+    required this.onPlay,
   });
 
   @override
@@ -140,19 +155,13 @@ class _BoardCard extends StatelessWidget {
         child: Row(
           children: [
             GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => GameScreen(boardType: boardType)),
-              ),
+              onTap: onPlay,
               child: SizedBox(width: 80, height: 80, child: preview),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: GestureDetector(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => GameScreen(boardType: boardType)),
-                ),
+                onTap: onPlay,
                 child: Text(
                   '$number. $label',
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
@@ -167,10 +176,7 @@ class _BoardCard extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.play_arrow),
               tooltip: 'ゲームを始める',
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => GameScreen(boardType: boardType)),
-              ),
+              onPressed: onPlay,
             ),
           ],
         ),

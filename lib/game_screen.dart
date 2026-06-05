@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'board_content_store.dart';
 import 'board_type.dart';
+import 'maru_batsu_mark.dart';
 import 'sound_service.dart';
 
 class GameScreen extends StatefulWidget {
@@ -47,7 +48,7 @@ class _GameScreenState extends State<GameScreen> {
     for (final line in lines) {
       final a = _board[line[0]], b = _board[line[1]], c = _board[line[2]];
       if (a != 0 && a == b && b == c) {
-        return a == 1 ? 'O' : 'X';
+        return a == 1 ? 'maru' : 'batsu';
       }
     }
 
@@ -88,76 +89,124 @@ class _GameScreenState extends State<GameScreen> {
           ),
         ],
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final boardSize = (constraints.maxWidth * 0.85).clamp(240.0, 400.0);
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildStatusText(),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: boardSize,
-                    height: boardSize,
-                    child: GridView.builder(
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3),
-                      itemCount: 9,
-                      itemBuilder: (_, index) => _buildCell(
-                        index,
-                        boardSize / 3,
-                        colors: colors,
-                        labels: labels,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  Row(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxHeight < 520;
+          final contentWidth = constraints.maxWidth.clamp(0.0, 480.0);
+          final boardSize = [
+            contentWidth * 0.85,
+            constraints.maxHeight * (isCompact ? 0.55 : 0.45),
+          ].reduce((a, b) => a < b ? a : b).clamp(180.0, 400.0);
+
+          return SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: isCompact ? 8 : 16,
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight - 32),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      ElevatedButton.icon(
-                        onPressed: _reset,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('もう一度'),
+                      _buildStatusText(compact: isCompact),
+                      SizedBox(height: isCompact ? 12 : 24),
+                      SizedBox(
+                        width: boardSize,
+                        height: boardSize,
+                        child: GridView.builder(
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                          ),
+                          itemCount: 9,
+                          itemBuilder: (_, index) => _buildCell(
+                            index,
+                            boardSize / 3,
+                            colors: colors,
+                            labels: labels,
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 16),
-                      ElevatedButton.icon(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.list),
-                        label: const Text('盤面選択'),
+                      SizedBox(height: isCompact ? 16 : 32),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 12,
+                        runSpacing: 8,
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: _reset,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('もう一度'),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(Icons.list),
+                            label: const Text('盤面選択'),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              );
-            },
-          ),
-        ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildStatusText() {
-    final String text;
-    final Color color;
+  Widget _buildStatusText({bool compact = false}) {
+    final markSize = compact ? 24.0 : 32.0;
+    final fontSize = compact ? 20.0 : 26.0;
 
     if (_winner == 'draw') {
-      text = '引き分け！';
-      color = Colors.orange;
-    } else if (_winner != null) {
-      text = '$_winner の勝ち！';
-      color = _winner == 'O' ? Colors.red : Colors.blue;
-    } else {
-      text = '${_currentPlayer == 1 ? 'O' : 'X'} の番';
-      color = _currentPlayer == 1 ? Colors.red : Colors.blue;
+      return Text(
+        '引き分け！',
+        style: TextStyle(
+          fontSize: fontSize,
+          fontWeight: FontWeight.bold,
+          color: Colors.orange,
+        ),
+      );
     }
 
-    return Text(
-      text,
-      style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: color),
+    if (_winner != null) {
+      final player = _winner == 'maru' ? 1 : 2;
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          MaruBatsuMark(player: player, size: markSize),
+          const SizedBox(width: 8),
+          Text(
+            'の勝ち！',
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: FontWeight.bold,
+              color: player == 1 ? Colors.red : Colors.blue,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        MaruBatsuMark(player: _currentPlayer, size: markSize),
+        const SizedBox(width: 8),
+        Text(
+          'の番',
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: FontWeight.bold,
+            color: _currentPlayer == 1 ? Colors.red : Colors.blue,
+          ),
+        ),
+      ],
     );
   }
 
@@ -181,17 +230,9 @@ class _GameScreenState extends State<GameScreen> {
             _buildCellBackground(index, cellSize, colors: colors, labels: labels),
             if (player != 0)
               Center(
-                child: Text(
-                  player == 1 ? '○' : '×',
-                  style: TextStyle(
-                    fontSize: cellSize * 0.6,
-                    fontWeight: FontWeight.bold,
-                    color: (player == 1 ? Colors.red : Colors.blue).withValues(alpha: 0.85),
-                    shadows: const [
-                      Shadow(color: Colors.white, blurRadius: 6),
-                      Shadow(color: Colors.white, blurRadius: 12),
-                    ],
-                  ),
+                child: MaruBatsuMark(
+                  player: player,
+                  size: cellSize * 0.55,
                 ),
               ),
           ],

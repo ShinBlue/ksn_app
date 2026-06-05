@@ -47,7 +47,9 @@ class _BoardEditScreenState extends State<BoardEditScreen> {
       final values = _controllers.map((c) => c.text.trim()).toList();
       for (var i = 0; i < values.length; i++) {
         if (values[i].isEmpty) {
-          values[i] = BoardDefaults.labelsFor(widget.boardType)[i];
+          values[i] = widget.boardType == BoardType.text
+              ? BoardDefaults.textPatternLabels(_store.textPattern)[i]
+              : BoardDefaults.labelsFor(widget.boardType)[i];
         }
       }
       await _store.saveLabels(widget.boardType, values);
@@ -179,6 +181,14 @@ class _BoardEditScreenState extends State<BoardEditScreen> {
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 16),
                 ),
+                if (widget.boardType == BoardType.text) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    'パターン: ${BoardDefaults.textPatternName(_store.textPattern)}',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 AspectRatio(
                   aspectRatio: 1,

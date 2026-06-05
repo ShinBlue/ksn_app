@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'board_type.dart';
+import 'text_board_pattern.dart';
 
 class BoardDefaults {
   BoardDefaults._();
@@ -45,6 +46,65 @@ class BoardDefaults {
     'オムライス', 'りんご', 'さんご',
     'かれーらいす', 'ぐらたん', 'たいこ',
   ];
+
+  static const List<String> textPattern1 = [
+    'かめ', 'くるま', 'きのこ',
+    'げた', 'ごりら', 'てがみ',
+    'おにぎり', 'いけ', 'もぐら',
+  ];
+
+  static const List<String> textPattern2 = [
+    'すずめ', 'けしごむ', 'はやぶさ',
+    'かたつむり', 'ちらしずし', 'じてんしゃ',
+    'りょうり', 'さんどいっち', 'とうもろこし',
+  ];
+
+  static const List<String> textPattern3 = [
+    'まめ', 'ぱん', 'こっぷ',
+    'ろば', 'うま', 'ぶた',
+    'めがね', 'みかん', 'たんぽぽ',
+  ];
+
+  static const textPatternStorageKey = 'board_text_pattern';
+
+  static String textPatternName(TextBoardPattern pattern) {
+    return 'パターン${pattern.index + 1}';
+  }
+
+  /// パターン選択画面用のパステルカラー
+  static const List<Color> textPatternPastelFills = [
+    Color(0xFFE3F2FD),
+    Color(0xFFE8F5E9),
+    Color(0xFFFFF8E1),
+    Color(0xFFFCE4EC),
+  ];
+
+  static const List<Color> textPatternPastelBorders = [
+    Color(0xFF90CAF9),
+    Color(0xFFA5D6A7),
+    Color(0xFFFFE082),
+    Color(0xFFF48FB1),
+  ];
+
+  static const List<Color> textPatternPastelAccents = [
+    Color(0xFF42A5F5),
+    Color(0xFF66BB6A),
+    Color(0xFFFFCA28),
+    Color(0xFFEC407A),
+  ];
+
+  static List<String> textPatternLabels(TextBoardPattern pattern) {
+    switch (pattern) {
+      case TextBoardPattern.pattern1:
+        return List<String>.from(textPattern1);
+      case TextBoardPattern.pattern2:
+        return List<String>.from(textPattern2);
+      case TextBoardPattern.pattern3:
+        return List<String>.from(textPattern3);
+      case TextBoardPattern.pattern4:
+        return List<String>.from(texts);
+    }
+  }
 
   static const List<String> animals = [
     '🐢', '🐇', '🐈',
