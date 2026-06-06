@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'board_content_store.dart';
+import 'board_defaults.dart';
 import 'board_type.dart';
+import 'illustration_board_pattern.dart';
+import 'illustration_cell_image.dart';
 import 'maru_batsu_mark.dart';
 import 'sound_service.dart';
 
@@ -68,6 +71,12 @@ class _GameScreenState extends State<GameScreen> {
   Widget build(BuildContext context) {
     final colors = _store.colors();
     final labels = _store.labels(widget.boardType);
+    final images = widget.boardType == BoardType.illustration
+        ? _store.illustrationImages()
+        : null;
+    final illustrationPattern = widget.boardType == BoardType.illustration
+        ? _store.illustrationPattern
+        : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -93,10 +102,11 @@ class _GameScreenState extends State<GameScreen> {
         builder: (context, constraints) {
           final isCompact = constraints.maxHeight < 520;
           final contentWidth = constraints.maxWidth.clamp(0.0, 480.0);
-          final boardSize = [
+          final boardSize = ([
             contentWidth * 0.85,
             constraints.maxHeight * (isCompact ? 0.55 : 0.45),
-          ].reduce((a, b) => a < b ? a : b).clamp(180.0, 400.0);
+          ].reduce((a, b) => a < b ? a : b) * BoardDefaults.boardScale)
+              .clamp(BoardDefaults.boardMinSize, BoardDefaults.boardMaxSize);
 
           return SingleChildScrollView(
             padding: EdgeInsets.symmetric(
@@ -127,6 +137,8 @@ class _GameScreenState extends State<GameScreen> {
                             boardSize / 3,
                             colors: colors,
                             labels: labels,
+                            images: images,
+                            illustrationPattern: illustrationPattern,
                           ),
                         ),
                       ),
@@ -143,8 +155,18 @@ class _GameScreenState extends State<GameScreen> {
                           ),
                           ElevatedButton.icon(
                             onPressed: () => Navigator.pop(context),
-                            icon: const Icon(Icons.list),
-                            label: const Text('盤面選択'),
+                            icon: Icon(
+                              widget.boardType == BoardType.text ||
+                                      widget.boardType == BoardType.illustration
+                                  ? Icons.arrow_back
+                                  : Icons.list,
+                            ),
+                            label: Text(
+                              widget.boardType == BoardType.text ||
+                                      widget.boardType == BoardType.illustration
+                                  ? 'パターン選択'
+                                  : '盤面選択',
+                            ),
                           ),
                         ],
                       ),
@@ -215,6 +237,8 @@ class _GameScreenState extends State<GameScreen> {
     double cellSize, {
     required List<Color> colors,
     required List<String> labels,
+    List<String>? images,
+    IllustrationBoardPattern? illustrationPattern,
   }) {
     final player = _board[index];
 
@@ -227,7 +251,14 @@ class _GameScreenState extends State<GameScreen> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            _buildCellBackground(index, cellSize, colors: colors, labels: labels),
+            _buildCellBackground(
+              index,
+              cellSize,
+              colors: colors,
+              labels: labels,
+              images: images,
+              illustrationPattern: illustrationPattern,
+            ),
             if (player != 0)
               Center(
                 child: MaruBatsuMark(
@@ -246,6 +277,8 @@ class _GameScreenState extends State<GameScreen> {
     double cellSize, {
     required List<Color> colors,
     required List<String> labels,
+    List<String>? images,
+    IllustrationBoardPattern? illustrationPattern,
   }) {
     switch (widget.boardType) {
       case BoardType.color:
@@ -271,12 +304,10 @@ class _GameScreenState extends State<GameScreen> {
             ),
           ),
         );
-      case BoardType.animal:
-        return Center(
-          child: Text(
-            labels[index],
-            style: TextStyle(fontSize: cellSize * 0.45),
-          ),
+      case BoardType.illustration:
+        return IllustrationCellImage(
+          assetPath: images![index],
+          pattern: illustrationPattern,
         );
     }
   }

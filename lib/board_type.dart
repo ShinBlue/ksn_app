@@ -1,4 +1,4 @@
-enum BoardType { color, number, text, animal }
+enum BoardType { color, number, text, illustration }
 
 extension BoardTypeExtension on BoardType {
   String get label {
@@ -9,10 +9,11 @@ extension BoardTypeExtension on BoardType {
         return '数字盤面';
       case BoardType.text:
         return 'テキスト盤面';
-      case BoardType.animal:
-        return '動物盤面';
+      case BoardType.illustration:
+        return 'イラスト盤面';
     }
   }
 
-  bool get usesLabels => this != BoardType.color;
+  bool get usesLabels =>
+      this == BoardType.number || this == BoardType.text;
 }

@@ -2,21 +2,25 @@ import 'package:flutter/material.dart';
 
 import 'board_content_store.dart';
 import 'board_defaults.dart';
-import 'board_preview.dart';
 import 'board_type.dart';
+import 'board_preview.dart';
 import 'game_screen.dart';
-import 'text_board_pattern.dart';
+import 'illustration_board_pattern.dart';
+import 'illustration_defaults.dart';
 
-class TextPatternSelectScreen extends StatelessWidget {
-  const TextPatternSelectScreen({super.key});
+class IllustrationPatternSelectScreen extends StatelessWidget {
+  const IllustrationPatternSelectScreen({super.key});
 
-  Future<void> _startGame(BuildContext context, TextBoardPattern pattern) async {
-    await BoardContentStore.instance.applyTextPattern(pattern);
+  Future<void> _startGame(
+    BuildContext context,
+    IllustrationBoardPattern pattern,
+  ) async {
+    await BoardContentStore.instance.applyIllustrationPattern(pattern);
     if (!context.mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => const GameScreen(boardType: BoardType.text),
+        builder: (_) => const GameScreen(boardType: BoardType.illustration),
       ),
     );
   }
@@ -27,8 +31,8 @@ class TextPatternSelectScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFFFFBFE),
       appBar: AppBar(
         title: const Text('まるばつゲーム'),
-        backgroundColor: const Color(0xFFE8F5E9),
-        foregroundColor: const Color(0xFF2E7D32),
+        backgroundColor: const Color(0xFFE3F2FD),
+        foregroundColor: const Color(0xFF1565C0),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -43,21 +47,21 @@ class TextPatternSelectScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
-                  'ことばのパターンを選んでください',
+                  'イラストのカテゴリを選んでください',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'パターンをタップするとゲームが始まります',
+                  'カテゴリをタップするとゲームが始まります',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 24),
-                ...TextBoardPattern.values.map((pattern) {
+                ...IllustrationBoardPattern.values.map((pattern) {
                   final index = pattern.index;
-                  final labels = BoardDefaults.textPatternLabels(pattern);
-                  final accent = BoardDefaults.textPatternPastelAccents[index];
+                  final images = IllustrationDefaults.imagesFor(pattern);
+                  final accent = IllustrationDefaults.patternPastelAccents[index];
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
@@ -79,34 +83,20 @@ class TextPatternSelectScreen extends StatelessWidget {
                                 width: BoardDefaults.previewSizePattern,
                                 height: BoardDefaults.previewSizePattern,
                                 child: BoardPreview(
-                                  boardType: BoardType.text,
-                                  labels: labels,
+                                  boardType: BoardType.illustration,
+                                  images: images,
+                                  illustrationPattern: pattern,
                                 ),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      BoardDefaults.textPatternName(pattern),
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: accent.withValues(alpha: 0.85),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      labels.join('、'),
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade700,
-                                      ),
-                                      maxLines: 3,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
+                                child: Text(
+                                  IllustrationDefaults.patternName(pattern),
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: accent.withValues(alpha: 0.85),
+                                  ),
                                 ),
                               ),
                               Icon(Icons.play_circle_outline, color: accent),

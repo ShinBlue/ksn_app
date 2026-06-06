@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'board_defaults.dart';
 import 'board_type.dart';
+import 'illustration_board_pattern.dart';
+import 'illustration_defaults.dart';
 import 'text_board_pattern.dart';
 
 class BoardContentStore extends ChangeNotifier {
@@ -12,7 +14,8 @@ class BoardContentStore extends ChangeNotifier {
 
   final Map<BoardType, List<String>> _labels = {};
   List<Color> _colors = List<Color>.from(BoardDefaults.colors);
-  TextBoardPattern _textPattern = TextBoardPattern.pattern4;
+  TextBoardPattern _textPattern = TextBoardPattern.pattern1;
+  IllustrationBoardPattern _illustrationPattern = IllustrationBoardPattern.animal;
 
   List<String> labels(BoardType type) {
     if (type == BoardType.text) {
@@ -23,20 +26,36 @@ class BoardContentStore extends ChangeNotifier {
     return List<String>.from(_labels[type] ?? BoardDefaults.labelsFor(type));
   }
 
+  List<String> illustrationImages() =>
+      IllustrationDefaults.imagesFor(_illustrationPattern);
+
   List<Color> colors() => List<Color>.from(_colors);
 
   TextBoardPattern get textPattern => _textPattern;
 
+  IllustrationBoardPattern get illustrationPattern => _illustrationPattern;
+
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    final patternIndex = prefs.getInt(BoardDefaults.textPatternStorageKey);
-    if (patternIndex != null &&
-        patternIndex >= 0 &&
-        patternIndex < TextBoardPattern.values.length) {
-      _textPattern = TextBoardPattern.values[patternIndex];
+
+    final textPatternIndex = prefs.getInt(BoardDefaults.textPatternStorageKey);
+    if (textPatternIndex != null &&
+        textPatternIndex >= 0 &&
+        textPatternIndex < TextBoardPattern.values.length) {
+      _textPattern = TextBoardPattern.values[textPatternIndex];
     }
+
+    final illustrationPatternIndex =
+        prefs.getInt(IllustrationDefaults.illustrationPatternStorageKey);
+    if (illustrationPatternIndex != null &&
+        illustrationPatternIndex >= 0 &&
+        illustrationPatternIndex < IllustrationBoardPattern.values.length) {
+      _illustrationPattern =
+          IllustrationBoardPattern.values[illustrationPatternIndex];
+    }
+
     for (final type in BoardType.values) {
-      if (type == BoardType.color) continue;
+      if (type == BoardType.color || type == BoardType.illustration) continue;
       _labels[type] = List.generate(BoardDefaults.cellCount, (i) {
         final fallback = type == BoardType.text
             ? BoardDefaults.textPatternLabels(_textPattern)[i]
@@ -68,6 +87,16 @@ class BoardContentStore extends ChangeNotifier {
     await saveLabels(BoardType.text, BoardDefaults.textPatternLabels(pattern));
   }
 
+  Future<void> applyIllustrationPattern(IllustrationBoardPattern pattern) async {
+    _illustrationPattern = pattern;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(
+      IllustrationDefaults.illustrationPatternStorageKey,
+      pattern.index,
+    );
+    notifyListeners();
+  }
+
   Future<void> saveColors(List<Color> values) async {
     if (values.length != BoardDefaults.cellCount) return;
     final prefs = await SharedPreferences.getInstance();
@@ -90,7 +119,7 @@ class BoardContentStore extends ChangeNotifier {
       for (var i = 0; i < BoardDefaults.cellCount; i++) {
         await prefs.remove(BoardDefaults.storageKey(type, i));
       }
-    } else {
+    } else if (type != BoardType.illustration) {
       _labels[type] = List<String>.from(BoardDefaults.labelsFor(type));
       for (var i = 0; i < BoardDefaults.cellCount; i++) {
         await prefs.remove(BoardDefaults.storageKey(type, i));

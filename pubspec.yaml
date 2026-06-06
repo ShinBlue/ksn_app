@@ -59,6 +59,10 @@ flutter:
 
   assets:
     - assets/images/ksn_logo.png
+    - assets/images/動物/
+    - assets/images/果物/
+    - assets/images/乗り物/
+    - assets/images/食べ物/
     - assets/sounds/place_o.wav
     - assets/sounds/place_x.wav
     - assets/sounds/win.wav

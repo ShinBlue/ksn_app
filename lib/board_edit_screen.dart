@@ -147,7 +147,7 @@ class _BoardEditScreenState extends State<BoardEditScreen> {
     final hint = switch (widget.boardType) {
       BoardType.number => '数字（例: 1）',
       BoardType.text => 'ことば（例: りんご）',
-      BoardType.animal => '絵文字（例: 🐱）',
+      BoardType.illustration => '',
       BoardType.color => '',
     };
 
@@ -170,7 +170,7 @@ class _BoardEditScreenState extends State<BoardEditScreen> {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
+          constraints: const BoxConstraints(maxWidth: BoardDefaults.boardEditMaxWidth),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -212,7 +212,7 @@ class _BoardEditScreenState extends State<BoardEditScreen> {
                         controller: _controllers[index],
                         index: index,
                         hint: hint,
-                        largeText: widget.boardType == BoardType.animal,
+                        largeText: false,
                         maxLength: widget.boardType == BoardType.text ? 12 : 8,
                       );
                     },

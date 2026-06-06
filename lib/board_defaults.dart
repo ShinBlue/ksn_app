@@ -7,6 +7,13 @@ class BoardDefaults {
 
   static const cellCount = 9;
 
+  static const boardScale = 1.25;
+  static const boardMinSize = 225.0;
+  static const boardMaxSize = 500.0;
+  static const previewSizeHome = 100.0;
+  static const previewSizePattern = 90.0;
+  static const boardEditMaxWidth = 600.0;
+
   static const List<Color> colors = [
     Color(0xFF64B5F6),
     Color(0xFF8BC34A),
@@ -106,12 +113,6 @@ class BoardDefaults {
     }
   }
 
-  static const List<String> animals = [
-    '🐢', '🐇', '🐈',
-    '🐒', '🐘', '🐳',
-    '🐷', '🐙', '🦐',
-  ];
-
   static List<String> labelsFor(BoardType type) {
     switch (type) {
       case BoardType.color:
@@ -119,9 +120,9 @@ class BoardDefaults {
       case BoardType.number:
         return List<String>.from(numbers);
       case BoardType.text:
-        return List<String>.from(texts);
-      case BoardType.animal:
-        return List<String>.from(animals);
+        return List<String>.from(textPattern1);
+      case BoardType.illustration:
+        return List.filled(cellCount, '');
     }
   }
 

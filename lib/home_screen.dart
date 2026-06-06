@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'board_content_store.dart';
+import 'board_defaults.dart';
 import 'board_edit_screen.dart';
 import 'board_preview.dart';
 import 'board_type.dart';
 import 'game_screen.dart';
+import 'illustration_pattern_select_screen.dart';
 import 'text_pattern_select_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -46,6 +48,15 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       return;
     }
+    if (boardType == BoardType.illustration) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const IllustrationPatternSelectScreen(),
+        ),
+      );
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => GameScreen(boardType: boardType)),
@@ -74,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '鉛筆アイコンから文字・絵・色を変更できます',
+                  '鉛筆アイコンから文字・色を変更できます',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
                 ),
@@ -114,13 +125,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
                 _BoardCard(
                   number: '4',
-                  label: BoardType.animal.label,
+                  label: BoardType.illustration.label,
                   preview: BoardPreview(
-                    boardType: BoardType.animal,
-                    labels: _store.labels(BoardType.animal),
+                    boardType: BoardType.illustration,
+                    images: _store.illustrationImages(),
+                    illustrationPattern: _store.illustrationPattern,
                   ),
-                  onEdit: () => _openEdit(BoardType.animal),
-                  onPlay: () => _startGame(BoardType.animal),
+                  onPlay: () => _startGame(BoardType.illustration),
                 ),
               ],
             ),
@@ -135,15 +146,15 @@ class _BoardCard extends StatelessWidget {
   final String number;
   final String label;
   final Widget preview;
-  final VoidCallback onEdit;
   final VoidCallback onPlay;
+  final VoidCallback? onEdit;
 
   const _BoardCard({
     required this.number,
     required this.label,
     required this.preview,
-    required this.onEdit,
     required this.onPlay,
+    this.onEdit,
   });
 
   @override
@@ -156,7 +167,11 @@ class _BoardCard extends StatelessWidget {
           children: [
             GestureDetector(
               onTap: onPlay,
-              child: SizedBox(width: 80, height: 80, child: preview),
+              child: SizedBox(
+                width: BoardDefaults.previewSizeHome,
+                height: BoardDefaults.previewSizeHome,
+                child: preview,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -168,11 +183,12 @@ class _BoardCard extends StatelessWidget {
                 ),
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              tooltip: '盤面を編集',
-              onPressed: onEdit,
-            ),
+            if (onEdit != null)
+              IconButton(
+                icon: const Icon(Icons.edit_outlined),
+                tooltip: '盤面を編集',
+                onPressed: onEdit,
+              ),
             IconButton(
               icon: const Icon(Icons.play_arrow),
               tooltip: 'ゲームを始める',
