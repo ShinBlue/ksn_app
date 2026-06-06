@@ -1,0 +1,41 @@
+# 本番公開用（クライアント確認 OK 後に手動実行）
+#
+# 必要な GitHub Secrets（Settings → Secrets and variables → Actions）:
+#   FIREBASE_SERVICE_ACCOUNT … Firebase サービスアカウント JSON の全文
+#   FIREBASE_PROJECT_ID      … Firebase プロジェクト ID
+#
+# 任意: GitHub Environments で "production" を作成し、承認者を設定すると
+#       本番デプロイ前にレビューが必須になります。
+
+name: Deploy to Firebase (Production)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build web for Firebase
+        run: flutter build web --base-href /
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+          channelId: live
