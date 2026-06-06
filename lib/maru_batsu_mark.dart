@@ -30,15 +30,26 @@ class _MaruPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    final inset = strokeWidth / 2 + 2;
+    final outlineWidth = (strokeWidth * 0.65).clamp(2.0, 5.0);
+    final inset = strokeWidth / 2 + outlineWidth + 2;
     final rect = Rect.fromLTWH(inset, inset, size.width - inset * 2, size.height - inset * 2);
-    canvas.drawOval(rect, paint);
+
+    canvas.drawOval(
+      rect,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth + outlineWidth * 2
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawOval(
+      rect,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.round,
+    );
   }
 
   @override
@@ -76,23 +87,29 @@ class _BatsuPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
+    final outlineWidth = (strokeWidth * 0.65).clamp(2.0, 5.0);
+    final inset = strokeWidth / 2 + outlineWidth + 4;
+    final start1 = Offset(inset, inset);
+    final end1 = Offset(size.width - inset, size.height - inset);
+    final start2 = Offset(size.width - inset, inset);
+    final end2 = Offset(inset, size.height - inset);
+
+    final outlinePaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth + outlineWidth * 2
+      ..strokeCap = StrokeCap.round;
+
+    final mainPaint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
 
-    final inset = strokeWidth / 2 + 4;
-    canvas.drawLine(
-      Offset(inset, inset),
-      Offset(size.width - inset, size.height - inset),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(size.width - inset, inset),
-      Offset(inset, size.height - inset),
-      paint,
-    );
+    canvas.drawLine(start1, end1, outlinePaint);
+    canvas.drawLine(start2, end2, outlinePaint);
+    canvas.drawLine(start1, end1, mainPaint);
+    canvas.drawLine(start2, end2, mainPaint);
   }
 
   @override
