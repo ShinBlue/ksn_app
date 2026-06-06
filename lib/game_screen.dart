@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'analytics_service.dart';
 import 'board_content_store.dart';
 import 'board_defaults.dart';
 import 'board_type.dart';
@@ -29,6 +30,7 @@ class _GameScreenState extends State<GameScreen> {
 
     setState(() {
       _board[index] = _currentPlayer;
+      final wasPlaying = _winner == null;
       _winner = _checkWinner();
       if (_winner == null) {
         if (_currentPlayer == 1) { _sound.playPlaceO(); } else { _sound.playPlaceX(); }
@@ -37,6 +39,12 @@ class _GameScreenState extends State<GameScreen> {
         _sound.playDraw();
       } else {
         _sound.playWin();
+      }
+      if (wasPlaying && _winner != null) {
+        AnalyticsService.instance.logGameComplete(
+          boardType: widget.boardType.name,
+          result: _winner!,
+        );
       }
     });
   }
@@ -60,6 +68,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _reset() {
+    AnalyticsService.instance.logGameReset(widget.boardType.name);
     setState(() {
       _board = List.filled(9, 0);
       _currentPlayer = 1;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'analytics_service.dart';
 import 'board_content_store.dart';
 import 'board_defaults.dart';
 import 'board_type.dart';
@@ -15,11 +16,15 @@ class IllustrationPatternSelectScreen extends StatelessWidget {
     BuildContext context,
     IllustrationBoardPattern pattern,
   ) async {
+    AnalyticsService.instance.logIllustrationCategorySelect(pattern);
     await BoardContentStore.instance.applyIllustrationPattern(pattern);
     if (!context.mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
+        settings: const RouteSettings(
+          name: '${AnalyticsRoutes.game}/illustration',
+        ),
         builder: (_) => const GameScreen(boardType: BoardType.illustration),
       ),
     );

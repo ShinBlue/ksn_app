@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'analytics_service.dart';
 import 'board_content_store.dart';
 import 'board_defaults.dart';
 import 'board_type.dart';
@@ -54,6 +55,7 @@ class _BoardEditScreenState extends State<BoardEditScreen> {
       }
       await _store.saveLabels(widget.boardType, values);
     }
+    AnalyticsService.instance.logBoardEditSave(widget.boardType.name);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('保存しました')),

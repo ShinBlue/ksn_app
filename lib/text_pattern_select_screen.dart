@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'analytics_service.dart';
 import 'board_content_store.dart';
 import 'board_defaults.dart';
 import 'board_preview.dart';
@@ -11,11 +12,15 @@ class TextPatternSelectScreen extends StatelessWidget {
   const TextPatternSelectScreen({super.key});
 
   Future<void> _startGame(BuildContext context, TextBoardPattern pattern) async {
+    AnalyticsService.instance.logTextPatternSelect(pattern);
     await BoardContentStore.instance.applyTextPattern(pattern);
     if (!context.mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
+        settings: const RouteSettings(
+          name: '${AnalyticsRoutes.game}/text',
+        ),
         builder: (_) => const GameScreen(boardType: BoardType.text),
       ),
     );

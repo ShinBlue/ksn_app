@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'analytics_service.dart';
 import 'home_screen.dart';
 
 class MainMenuScreen extends StatelessWidget {
@@ -64,13 +65,23 @@ class MainMenuScreen extends StatelessWidget {
   }
 
   void _openMaruBatsu(BuildContext context) {
+    AnalyticsService.instance.logMainMenuSelect('maru_batsu');
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      MaterialPageRoute(
+        settings: const RouteSettings(name: AnalyticsRoutes.boardSelect),
+        builder: (_) => const HomeScreen(),
+      ),
     );
   }
 
   void _showComingSoon(BuildContext context, String name) {
+    final gameId = switch (name) {
+      'すごろく' => 'sugoroku',
+      'カルタ' => 'karuta',
+      _ => 'other',
+    };
+    AnalyticsService.instance.logMainMenuSelect(gameId);
     showDialog(
       context: context,
       builder: (_) => AlertDialog(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'analytics_service.dart';
 import 'board_content_store.dart';
 import 'board_defaults.dart';
 import 'board_edit_screen.dart';
@@ -33,18 +34,28 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onStoreChanged() => setState(() {});
 
   Future<void> _openEdit(BoardType boardType) async {
+    AnalyticsService.instance.logBoardEditOpen(boardType.name);
     await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (_) => BoardEditScreen(boardType: boardType)),
+      MaterialPageRoute(
+        settings: RouteSettings(
+          name: '${AnalyticsRoutes.boardEdit}/${boardType.name}',
+        ),
+        builder: (_) => BoardEditScreen(boardType: boardType),
+      ),
     );
     setState(() {});
   }
 
   void _startGame(BoardType boardType) {
+    AnalyticsService.instance.logBoardSelect(boardType.name);
     if (boardType == BoardType.text) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const TextPatternSelectScreen()),
+        MaterialPageRoute(
+          settings: const RouteSettings(name: AnalyticsRoutes.textPattern),
+          builder: (_) => const TextPatternSelectScreen(),
+        ),
       );
       return;
     }
@@ -52,6 +63,9 @@ class _HomeScreenState extends State<HomeScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
+          settings: const RouteSettings(
+            name: AnalyticsRoutes.illustrationPattern,
+          ),
           builder: (_) => const IllustrationPatternSelectScreen(),
         ),
       );
@@ -59,7 +73,12 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => GameScreen(boardType: boardType)),
+      MaterialPageRoute(
+        settings: RouteSettings(
+          name: '${AnalyticsRoutes.game}/${boardType.name}',
+        ),
+        builder: (_) => GameScreen(boardType: boardType),
+      ),
     );
   }
 
