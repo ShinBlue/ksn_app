@@ -2,7 +2,7 @@
 #
 # 必要な GitHub Secrets（Settings → Secrets and variables → Actions）:
 #   FIREBASE_SERVICE_ACCOUNT … Firebase サービスアカウント JSON の全文
-#   FIREBASE_PROJECT_ID      … Firebase プロジェクト ID
+#   FIREBASE_PROJECT_ID      … Firebase プロジェクト ID（ksn-apps）
 #
 # 任意: GitHub Environments で "production" を作成し、承認者を設定すると
 #       本番デプロイ前にレビューが必須になります。
