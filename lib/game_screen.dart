@@ -191,6 +191,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Widget _buildStatusText({bool compact = false}) {
+    final markSize = compact ? 24.0 : 32.0;
     final fontSize = compact ? 20.0 : 26.0;
 
     if (_winner == 'draw') {
@@ -205,24 +206,38 @@ class _GameScreenState extends State<GameScreen> {
     }
 
     if (_winner != null) {
-      final isMaru = _winner == 'maru';
-      return Text(
-        isMaru ? 'まるの勝ち！' : 'ばつの勝ち！',
-        style: TextStyle(
-          fontSize: fontSize,
-          fontWeight: FontWeight.bold,
-          color: isMaru ? Colors.red : Colors.blue,
-        ),
+      final player = _winner == 'maru' ? 1 : 2;
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          MaruBatsuMark(player: player, size: markSize),
+          const SizedBox(width: 8),
+          Text(
+            'のかち！',
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: FontWeight.bold,
+              color: player == 1 ? Colors.red : Colors.blue,
+            ),
+          ),
+        ],
       );
     }
 
-    return Text(
-      _currentPlayer == 1 ? 'まるの番' : 'ばつの番',
-      style: TextStyle(
-        fontSize: fontSize,
-        fontWeight: FontWeight.bold,
-        color: _currentPlayer == 1 ? Colors.red : Colors.blue,
-      ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        MaruBatsuMark(player: _currentPlayer, size: markSize),
+        const SizedBox(width: 8),
+        Text(
+          'の番',
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: FontWeight.bold,
+            color: _currentPlayer == 1 ? Colors.red : Colors.blue,
+          ),
+        ),
+      ],
     );
   }
 
