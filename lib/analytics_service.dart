@@ -119,4 +119,32 @@ class AnalyticsService {
   Future<void> logGameReset(String boardType) async {
     await logEvent('game_reset', params: {'board_type': boardType});
   }
+
+  Future<void> logSugorokuComplete({
+    required String boardSize,
+    required String playMode,
+    required String winnerName,
+  }) async {
+    await logEvent(
+      'sugoroku_complete',
+      params: {
+        'board_size': boardSize,
+        'play_mode': playMode,
+        'winner': winnerName,
+      },
+    );
+  }
+
+  Future<void> logSugorokuReset({
+    required String boardSize,
+    required String playMode,
+  }) async {
+    await logEvent(
+      'sugoroku_reset',
+      params: {
+        'board_size': boardSize,
+        'play_mode': playMode,
+      },
+    );
+  }
 }

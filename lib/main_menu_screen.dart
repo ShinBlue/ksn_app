@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'analytics_service.dart';
 import 'home_screen.dart';
+import 'sugoroku/sugoroku_screens.dart';
 
 class MainMenuScreen extends StatelessWidget {
   const MainMenuScreen({super.key});
@@ -25,6 +26,7 @@ class MainMenuScreen extends StatelessWidget {
                     child: _DesktopMenu(
                       width: constraints.maxWidth.clamp(0, 480),
                       onMaruBatsu: () => _openMaruBatsu(context),
+                      onSugoroku: () => _openSugoroku(context),
                       onComingSoon: (name) => _showComingSoon(context, name),
                     ),
                   ),
@@ -46,12 +48,14 @@ class MainMenuScreen extends StatelessWidget {
                         ? _LandscapeMenu(
                             maxHeight: constraints.maxHeight,
                             onMaruBatsu: () => _openMaruBatsu(context),
+                            onSugoroku: () => _openSugoroku(context),
                             onComingSoon: (name) => _showComingSoon(context, name),
                           )
                         : _PortraitMenu(
                             width: constraints.maxWidth,
                             isCompact: isCompact,
                             onMaruBatsu: () => _openMaruBatsu(context),
+                            onSugoroku: () => _openSugoroku(context),
                             onComingSoon: (name) => _showComingSoon(context, name),
                           ),
                   ),
@@ -75,9 +79,19 @@ class MainMenuScreen extends StatelessWidget {
     );
   }
 
+  void _openSugoroku(BuildContext context) {
+    AnalyticsService.instance.logMainMenuSelect('sugoroku');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        settings: const RouteSettings(name: '/sugoroku/select'),
+        builder: (_) => const SugorokuBoardSelectScreen(),
+      ),
+    );
+  }
+
   void _showComingSoon(BuildContext context, String name) {
     final gameId = switch (name) {
-      'すごろく' => 'sugoroku',
       'カルタ' => 'karuta',
       _ => 'other',
     };
@@ -102,11 +116,13 @@ class MainMenuScreen extends StatelessWidget {
 class _DesktopMenu extends StatelessWidget {
   final double width;
   final VoidCallback onMaruBatsu;
+  final VoidCallback onSugoroku;
   final void Function(String name) onComingSoon;
 
   const _DesktopMenu({
     required this.width,
     required this.onMaruBatsu,
+    required this.onSugoroku,
     required this.onComingSoon,
   });
 
@@ -128,6 +144,7 @@ class _DesktopMenu extends StatelessWidget {
         _GameButtonList(
           compact: false,
           onMaruBatsu: onMaruBatsu,
+          onSugoroku: onSugoroku,
           onComingSoon: onComingSoon,
           spacing: 20,
         ),
@@ -142,12 +159,14 @@ class _PortraitMenu extends StatelessWidget {
   final double width;
   final bool isCompact;
   final VoidCallback onMaruBatsu;
+  final VoidCallback onSugoroku;
   final void Function(String name) onComingSoon;
 
   const _PortraitMenu({
     required this.width,
     required this.isCompact,
     required this.onMaruBatsu,
+    required this.onSugoroku,
     required this.onComingSoon,
   });
 
@@ -174,6 +193,7 @@ class _PortraitMenu extends StatelessWidget {
         _GameButtonList(
           compact: isCompact,
           onMaruBatsu: onMaruBatsu,
+          onSugoroku: onSugoroku,
           onComingSoon: onComingSoon,
           spacing: buttonSpacing,
         ),
@@ -187,11 +207,13 @@ class _PortraitMenu extends StatelessWidget {
 class _LandscapeMenu extends StatelessWidget {
   final double maxHeight;
   final VoidCallback onMaruBatsu;
+  final VoidCallback onSugoroku;
   final void Function(String name) onComingSoon;
 
   const _LandscapeMenu({
     required this.maxHeight,
     required this.onMaruBatsu,
+    required this.onSugoroku,
     required this.onComingSoon,
   });
 
@@ -216,6 +238,7 @@ class _LandscapeMenu extends StatelessWidget {
           child: _GameButtonList(
             compact: true,
             onMaruBatsu: onMaruBatsu,
+            onSugoroku: onSugoroku,
             onComingSoon: onComingSoon,
             spacing: 10,
           ),
@@ -272,12 +295,14 @@ class _MenuHeader extends StatelessWidget {
 class _GameButtonList extends StatelessWidget {
   final bool compact;
   final VoidCallback onMaruBatsu;
+  final VoidCallback onSugoroku;
   final void Function(String name) onComingSoon;
   final double spacing;
 
   const _GameButtonList({
     required this.compact,
     required this.onMaruBatsu,
+    required this.onSugoroku,
     required this.onComingSoon,
     required this.spacing,
   });
@@ -302,7 +327,7 @@ class _GameButtonList extends StatelessWidget {
             icon: Icons.casino,
             color: const Color(0xFF8BC34A),
             compact: compact,
-            onTap: () => onComingSoon('すごろく'),
+            onTap: onSugoroku,
           ),
           SizedBox(height: spacing),
           _GameButton(
