@@ -71,6 +71,7 @@ flutter:
     - assets/sounds/place_x.wav
     - assets/sounds/win.wav
     - assets/sounds/draw.wav
+    - assets/data/karuta_sentences.csv
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
