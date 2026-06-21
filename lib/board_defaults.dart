@@ -130,5 +130,9 @@ class BoardDefaults {
     return 'board_${type.name}_$index';
   }
 
+  static String textPatternLabelStorageKey(TextBoardPattern pattern, int index) {
+    return 'board_text_${pattern.name}_$index';
+  }
+
   static String colorStorageKey(int index) => 'board_color_$index';
 }

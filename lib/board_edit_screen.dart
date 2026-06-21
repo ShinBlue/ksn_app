@@ -4,11 +4,17 @@ import 'analytics_service.dart';
 import 'board_content_store.dart';
 import 'board_defaults.dart';
 import 'board_type.dart';
+import 'text_board_pattern.dart';
 
 class BoardEditScreen extends StatefulWidget {
   final BoardType boardType;
+  final TextBoardPattern? textPattern;
 
-  const BoardEditScreen({super.key, required this.boardType});
+  const BoardEditScreen({
+    super.key,
+    required this.boardType,
+    this.textPattern,
+  });
 
   @override
   State<BoardEditScreen> createState() => _BoardEditScreenState();
@@ -25,6 +31,12 @@ class _BoardEditScreenState extends State<BoardEditScreen> {
     super.initState();
     if (widget.boardType == BoardType.color) {
       _draftColors = List<Color>.from(_store.colors());
+    } else if (widget.boardType == BoardType.text) {
+      final pattern = widget.textPattern ?? _store.textPattern;
+      _draftLabels = List<String>.from(_store.labelsForTextPattern(pattern));
+      for (final label in _draftLabels) {
+        _controllers.add(TextEditingController(text: label));
+      }
     } else {
       _draftLabels = List<String>.from(_store.labels(widget.boardType));
       for (final label in _draftLabels) {
@@ -44,18 +56,28 @@ class _BoardEditScreenState extends State<BoardEditScreen> {
   Future<void> _save() async {
     if (widget.boardType == BoardType.color) {
       await _store.saveColors(_draftColors);
+    } else if (widget.boardType == BoardType.text) {
+      final pattern = widget.textPattern ?? _store.textPattern;
+      final values = _controllers.map((c) => c.text.trim()).toList();
+      for (var i = 0; i < values.length; i++) {
+        if (values[i].isEmpty) {
+          values[i] = BoardDefaults.textPatternLabels(pattern)[i];
+        }
+      }
+      await _store.saveTextPatternLabels(pattern, values);
     } else {
       final values = _controllers.map((c) => c.text.trim()).toList();
       for (var i = 0; i < values.length; i++) {
         if (values[i].isEmpty) {
-          values[i] = widget.boardType == BoardType.text
-              ? BoardDefaults.textPatternLabels(_store.textPattern)[i]
-              : BoardDefaults.labelsFor(widget.boardType)[i];
+          values[i] = BoardDefaults.labelsFor(widget.boardType)[i];
         }
       }
       await _store.saveLabels(widget.boardType, values);
     }
-    AnalyticsService.instance.logBoardEditSave(widget.boardType.name);
+    final saveTarget = widget.boardType == BoardType.text
+        ? '${widget.boardType.name}_${(widget.textPattern ?? _store.textPattern).name}'
+        : widget.boardType.name;
+    AnalyticsService.instance.logBoardEditSave(saveTarget);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('保存しました')),
@@ -67,20 +89,45 @@ class _BoardEditScreenState extends State<BoardEditScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('初期値に戻す'),
-        content: const Text('盤面の内容を初期状態に戻しますか？'),
+        title: const Text('初期値にもどしますか？'),
+        content: Text(
+          widget.boardType == BoardType.color
+              ? '編集した色が消えて、最初から用意されている色に戻ります。'
+              : '編集したことばが消えて、最初から用意されている内容に戻ります。',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('キャンセル')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('戻す')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('キャンセル'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(ctx, true),
+            icon: const Icon(Icons.restore, size: 18),
+            label: const Text('初期値にもどす'),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.orange.shade700,
+            ),
+          ),
         ],
       ),
     );
     if (confirmed != true || !mounted) return;
 
-    await _store.reset(widget.boardType);
+    if (widget.boardType == BoardType.text) {
+      final pattern = widget.textPattern ?? _store.textPattern;
+      await _store.resetTextPattern(pattern);
+    } else {
+      await _store.reset(widget.boardType);
+    }
     setState(() {
       if (widget.boardType == BoardType.color) {
         _draftColors = List<Color>.from(_store.colors());
+      } else if (widget.boardType == BoardType.text) {
+        final pattern = widget.textPattern ?? _store.textPattern;
+        _draftLabels = List<String>.from(_store.labelsForTextPattern(pattern));
+        for (var i = 0; i < _controllers.length; i++) {
+          _controllers[i].text = _draftLabels[i];
+        }
       } else {
         _draftLabels = List<String>.from(_store.labels(widget.boardType));
         for (var i = 0; i < _controllers.length; i++) {
@@ -153,22 +200,15 @@ class _BoardEditScreenState extends State<BoardEditScreen> {
       BoardType.color => '',
     };
 
+    final pattern = widget.textPattern ?? _store.textPattern;
+    final title = widget.boardType == BoardType.text
+        ? '${BoardDefaults.textPatternName(pattern)}を編集'
+        : '${widget.boardType.label}を編集';
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.boardType.label}を編集'),
+        title: Text(title),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.restore),
-            tooltip: '初期値に戻す',
-            onPressed: _reset,
-          ),
-          IconButton(
-            icon: const Icon(Icons.check),
-            tooltip: '保存',
-            onPressed: _save,
-          ),
-        ],
       ),
       body: Center(
         child: ConstrainedBox(
@@ -185,10 +225,36 @@ class _BoardEditScreenState extends State<BoardEditScreen> {
                 ),
                 if (widget.boardType == BoardType.text) ...[
                   const SizedBox(height: 16),
-                  Text(
-                    'パターン: ${BoardDefaults.textPatternName(_store.textPattern)}',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        BoardDefaults.textPatternName(pattern),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade800,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _EditActionButtons(
+                          isColor: isColor,
+                          onReset: _reset,
+                          onSave: _save,
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: _EditActionButtons(
+                      isColor: isColor,
+                      onReset: _reset,
+                      onSave: _save,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 24),
@@ -220,17 +286,63 @@ class _BoardEditScreenState extends State<BoardEditScreen> {
                     },
                   ),
                 ),
-                const SizedBox(height: 32),
-                FilledButton.icon(
-                  onPressed: _save,
-                  icon: const Icon(Icons.save),
-                  label: const Text('保存する'),
-                ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _EditActionButtons extends StatelessWidget {
+  final bool isColor;
+  final VoidCallback onReset;
+  final VoidCallback onSave;
+
+  const _EditActionButtons({
+    required this.isColor,
+    required this.onReset,
+    required this.onSave,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final resetLabel = isColor ? '初期の色にもどす' : '初期の盤面にもどす';
+
+    return Row(
+      children: [
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: onSave,
+            icon: const Icon(Icons.save, size: 18),
+            label: const Text(
+              '変更を保存する',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+            ),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+              backgroundColor: const Color(0xFF5BAD5B),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: onReset,
+            icon: const Icon(Icons.restore, size: 16),
+            label: Text(
+              resetLabel,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+              foregroundColor: Colors.orange.shade800,
+              side: BorderSide(color: Colors.orange.shade400, width: 1.5),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

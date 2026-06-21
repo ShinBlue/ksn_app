@@ -104,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '鉛筆アイコンから文字・色を変更できます',
+                  '色・数字盤面は鉛筆アイコンから編集できます',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
                 ),
@@ -138,7 +138,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     boardType: BoardType.text,
                     labels: _store.labels(BoardType.text),
                   ),
-                  onEdit: () => _openEdit(BoardType.text),
                   onPlay: () => _startGame(BoardType.text),
                 ),
                 const SizedBox(height: 16),

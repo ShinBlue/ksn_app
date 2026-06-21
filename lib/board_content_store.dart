@@ -13,15 +13,20 @@ class BoardContentStore extends ChangeNotifier {
   static final BoardContentStore instance = BoardContentStore._();
 
   final Map<BoardType, List<String>> _labels = {};
+  final Map<TextBoardPattern, List<String>> _textPatternLabels = {};
   List<Color> _colors = List<Color>.from(BoardDefaults.colors);
   TextBoardPattern _textPattern = TextBoardPattern.pattern1;
   IllustrationBoardPattern _illustrationPattern = IllustrationBoardPattern.animal;
 
+  List<String> labelsForTextPattern(TextBoardPattern pattern) {
+    return List<String>.from(
+      _textPatternLabels[pattern] ?? BoardDefaults.textPatternLabels(pattern),
+    );
+  }
+
   List<String> labels(BoardType type) {
     if (type == BoardType.text) {
-      return List<String>.from(
-        _labels[type] ?? BoardDefaults.textPatternLabels(_textPattern),
-      );
+      return labelsForTextPattern(_textPattern);
     }
     return List<String>.from(_labels[type] ?? BoardDefaults.labelsFor(type));
   }
@@ -55,12 +60,24 @@ class BoardContentStore extends ChangeNotifier {
     }
 
     for (final type in BoardType.values) {
-      if (type == BoardType.color || type == BoardType.illustration) continue;
+      if (type == BoardType.color ||
+          type == BoardType.illustration ||
+          type == BoardType.text) {
+        continue;
+      }
       _labels[type] = List.generate(BoardDefaults.cellCount, (i) {
-        final fallback = type == BoardType.text
-            ? BoardDefaults.textPatternLabels(_textPattern)[i]
-            : BoardDefaults.labelsFor(type)[i];
-        return prefs.getString(BoardDefaults.storageKey(type, i)) ?? fallback;
+        return prefs.getString(BoardDefaults.storageKey(type, i)) ??
+            BoardDefaults.labelsFor(type)[i];
+      });
+    }
+
+    for (final pattern in TextBoardPattern.values) {
+      _textPatternLabels[pattern] = List.generate(BoardDefaults.cellCount, (i) {
+        final patternKey = BoardDefaults.textPatternLabelStorageKey(pattern, i);
+        final legacyKey = BoardDefaults.storageKey(BoardType.text, i);
+        return prefs.getString(patternKey) ??
+            (pattern == _textPattern ? prefs.getString(legacyKey) : null) ??
+            BoardDefaults.textPatternLabels(pattern)[i];
       });
     }
     _colors = List.generate(BoardDefaults.cellCount, (i) {
@@ -84,7 +101,33 @@ class BoardContentStore extends ChangeNotifier {
     _textPattern = pattern;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(BoardDefaults.textPatternStorageKey, pattern.index);
-    await saveLabels(BoardType.text, BoardDefaults.textPatternLabels(pattern));
+    notifyListeners();
+  }
+
+  Future<void> saveTextPatternLabels(
+    TextBoardPattern pattern,
+    List<String> values,
+  ) async {
+    if (values.length != BoardDefaults.cellCount) return;
+    final prefs = await SharedPreferences.getInstance();
+    _textPatternLabels[pattern] = List<String>.from(values);
+    for (var i = 0; i < values.length; i++) {
+      await prefs.setString(
+        BoardDefaults.textPatternLabelStorageKey(pattern, i),
+        values[i],
+      );
+    }
+    notifyListeners();
+  }
+
+  Future<void> resetTextPattern(TextBoardPattern pattern) async {
+    final prefs = await SharedPreferences.getInstance();
+    _textPatternLabels[pattern] =
+        List<String>.from(BoardDefaults.textPatternLabels(pattern));
+    for (var i = 0; i < BoardDefaults.cellCount; i++) {
+      await prefs.remove(BoardDefaults.textPatternLabelStorageKey(pattern, i));
+    }
+    notifyListeners();
   }
 
   Future<void> applyIllustrationPattern(IllustrationBoardPattern pattern) async {
@@ -113,11 +156,6 @@ class BoardContentStore extends ChangeNotifier {
       _colors = List<Color>.from(BoardDefaults.colors);
       for (var i = 0; i < BoardDefaults.cellCount; i++) {
         await prefs.remove(BoardDefaults.colorStorageKey(i));
-      }
-    } else if (type == BoardType.text) {
-      _labels[type] = List<String>.from(BoardDefaults.textPatternLabels(_textPattern));
-      for (var i = 0; i < BoardDefaults.cellCount; i++) {
-        await prefs.remove(BoardDefaults.storageKey(type, i));
       }
     } else if (type != BoardType.illustration) {
       _labels[type] = List<String>.from(BoardDefaults.labelsFor(type));
