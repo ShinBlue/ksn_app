@@ -62,6 +62,38 @@ abstract final class SugorokuBoardLayout {
 
   static double cellFraction(SugorokuBoardSize size) =>
       size == SugorokuBoardSize.short10 ? 0.16 : 0.095;
+
+  static const framedPadding = 24.0;
+
+  /// 利用可能な領域に収まる盤面の幅を計算する。
+  static double boardWidthFitting({
+    required SugorokuBoardSize size,
+    required double maxWidth,
+    required double maxHeight,
+    bool framed = true,
+    double overheadTop = 0,
+    double overheadBottom = 0,
+    double gapBetween = 0,
+    double? secondaryAspectRatio,
+  }) {
+    final aspect = aspectRatio(size);
+    final framePad = framed ? framedPadding : 0.0;
+    final availW = (maxWidth - framePad).clamp(1.0, double.infinity);
+    final availH =
+        (maxHeight - framePad - overheadTop - overheadBottom).clamp(1.0, double.infinity);
+
+    double width;
+    if (secondaryAspectRatio != null) {
+      width = (availH - gapBetween) / (1 / aspect + 1 / secondaryAspectRatio);
+    } else {
+      width = availH * aspect;
+    }
+
+    return width.clamp(1.0, availW).clamp(1.0, maxBoardWidth(size));
+  }
+
+  static double boardHeightForWidth(SugorokuBoardSize size, double width) =>
+      width / aspectRatio(size);
 }
 
 class SugorokuBoardArrowsPainter extends CustomPainter {

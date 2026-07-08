@@ -31,82 +31,105 @@ class SugorokuProgressBoardView extends StatelessWidget {
     final normalized = SugorokuBoardLayout.centersFor(size);
     final cellFraction = SugorokuBoardLayout.cellFraction(size);
 
-    final board = AspectRatio(
-      aspectRatio: SugorokuBoardLayout.aspectRatio(size),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final boardSize = Size(constraints.maxWidth, constraints.maxHeight);
-          final cellSize = boardSize.shortestSide * cellFraction;
-          final cellRadius = cellSize / 2;
-          // マス中心を内側に寄せ、端のマスがはみ出さないようにする
-          const selectionRing = 3.0;
-          final inset = cellRadius + selectionRing;
-          final innerW = (boardSize.width - inset * 2).clamp(1.0, double.infinity);
-          final innerH =
-              (boardSize.height - inset * 2).clamp(1.0, double.infinity);
-          final centers = normalized
-              .map(
-                (p) => Offset(
-                  inset + p.dx * innerW,
-                  inset + p.dy * innerH,
-                ),
-              )
-              .toList();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxHeight = constraints.hasBoundedHeight
+            ? constraints.maxHeight
+            : double.infinity;
+        final boardWidth = SugorokuBoardLayout.boardWidthFitting(
+          size: size,
+          maxWidth: constraints.maxWidth,
+          maxHeight: maxHeight,
+          framed: framed,
+        );
+        final boardHeight = SugorokuBoardLayout.boardHeightForWidth(size, boardWidth);
 
-          return Stack(
-            clipBehavior: Clip.hardEdge,
-            children: [
-              CustomPaint(
-                size: boardSize,
-                painter: SugorokuBoardArrowsPainter(
-                  centers: centers,
-                  cellRadius: cellRadius,
-                ),
-              ),
-              for (var i = 0; i < cells.length; i++)
-                Positioned(
-                  left: centers[i].dx - cellSize / 2,
-                  top: centers[i].dy - cellSize / 2,
-                  width: cellSize,
-                  height: cellSize,
-                  child: _BoardCell(
-                    cell: cells[i],
-                    index: i,
-                    cellCount: cells.length,
-                    boardSize: size,
-                    piecesHere: pieces.where((p) => p.position == i).toList(),
-                    selectedPieceId: selectedPieceId,
-                    compactPieces: compact || size == SugorokuBoardSize.long20,
-                    editable: editable,
-                    onTap: editable && onCellTap != null
-                        ? () => onCellTap!(i)
-                        : null,
+        final board = SizedBox(
+          width: boardWidth,
+          height: boardHeight,
+          child: LayoutBuilder(
+            builder: (context, innerConstraints) {
+              final boardSize = Size(boardWidth, boardHeight);
+              final cellSize = boardSize.shortestSide * cellFraction;
+              final cellRadius = cellSize / 2;
+              const selectionRing = 3.0;
+              final inset = cellRadius + selectionRing;
+              final innerW =
+                  (boardSize.width - inset * 2).clamp(1.0, double.infinity);
+              final innerH =
+                  (boardSize.height - inset * 2).clamp(1.0, double.infinity);
+              final centers = normalized
+                  .map(
+                    (p) => Offset(
+                      inset + p.dx * innerW,
+                      inset + p.dy * innerH,
+                    ),
+                  )
+                  .toList();
+
+              return Stack(
+                clipBehavior: Clip.hardEdge,
+                children: [
+                  CustomPaint(
+                    size: boardSize,
+                    painter: SugorokuBoardArrowsPainter(
+                      centers: centers,
+                      cellRadius: cellRadius,
+                    ),
                   ),
-                ),
-            ],
-          );
-        },
-      ),
-    );
-
-    if (!framed) return board;
-
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF455A64), width: 3),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x22000000),
-            offset: Offset(0, 3),
-            blurRadius: 6,
+                  for (var i = 0; i < cells.length; i++)
+                    Positioned(
+                      left: centers[i].dx - cellSize / 2,
+                      top: centers[i].dy - cellSize / 2,
+                      width: cellSize,
+                      height: cellSize,
+                      child: _BoardCell(
+                        cell: cells[i],
+                        index: i,
+                        cellCount: cells.length,
+                        boardSize: size,
+                        piecesHere:
+                            pieces.where((p) => p.position == i).toList(),
+                        selectedPieceId: selectedPieceId,
+                        compactPieces:
+                            compact || size == SugorokuBoardSize.long20,
+                        editable: editable,
+                        onTap: editable && onCellTap != null
+                            ? () => onCellTap!(i)
+                            : null,
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
-        ],
-      ),
-      padding: const EdgeInsets.all(12),
-      child: board,
+        );
+
+        final content = framed
+            ? Container(
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF8E1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFF455A64), width: 3),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x22000000),
+                      offset: Offset(0, 3),
+                      blurRadius: 6,
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(12),
+                child: board,
+              )
+            : board;
+
+        return Align(
+          alignment: Alignment.topCenter,
+          child: content,
+        );
+      },
     );
   }
 }

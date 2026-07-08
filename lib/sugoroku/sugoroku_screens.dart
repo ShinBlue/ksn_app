@@ -467,30 +467,42 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
 
   Widget _buildBoardCenter() {
     if (!_isPlaying) {
-      return _SetupBoardCenter(
-        size: widget.size,
-        cells: _cells,
-        pieces: _displayPieces,
-        selectedPieceId: _displaySelectedPieceId,
-        canStart: _canStartSetup,
-        onStart: _startGame,
-        onCellTap: _editCellLabel,
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          return _SetupBoardCenter(
+            size: widget.size,
+            cells: _cells,
+            pieces: _displayPieces,
+            selectedPieceId: _displaySelectedPieceId,
+            canStart: _canStartSetup,
+            onStart: _startGame,
+            onCellTap: _editCellLabel,
+            maxHeight: constraints.maxHeight,
+            maxWidth: constraints.maxWidth,
+          );
+        },
       );
     }
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _canTapToAdvance ? _tapToAdvance : null,
-      child: _BoardArea(
-        size: widget.size,
-        cells: _cells,
-        pieces: _pieces,
-        activePlayerIndex: _activePlayerIndex,
-        mode: _mode,
-        hiddenState: _hiddenState,
-        awaitingAnimalPick: _awaitingAnimalPick,
-        canTapAdvance: _canTapToAdvance,
-        onAnimalSelected: _onAnimalSelected,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return _BoardArea(
+            size: widget.size,
+            cells: _cells,
+            pieces: _pieces,
+            activePlayerIndex: _activePlayerIndex,
+            mode: _mode,
+            hiddenState: _hiddenState,
+            awaitingAnimalPick: _awaitingAnimalPick,
+            canTapAdvance: _canTapToAdvance,
+            onAnimalSelected: _onAnimalSelected,
+            maxHeight: constraints.maxHeight,
+            maxWidth: constraints.maxWidth,
+          );
+        },
       ),
     );
   }
@@ -578,15 +590,18 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
           final rightPanel = _buildRightPanel();
 
           if (constraints.maxWidth >= 640) {
-            return Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 1120),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      SizedBox(width: 188, child: leftPanel),
+                      SizedBox(
+                        width: 188,
+                        child: SingleChildScrollView(child: leftPanel),
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Align(
@@ -595,7 +610,10 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      SizedBox(width: 188, child: rightPanel),
+                      SizedBox(
+                        width: 188,
+                        child: SingleChildScrollView(child: rightPanel),
+                      ),
                     ],
                   ),
                 ),
@@ -603,26 +621,30 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
             );
           }
 
-          return SingleChildScrollView(
+          return Padding(
             padding: const EdgeInsets.all(16),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: constraints.maxWidth),
-                child: Column(
+            child: Column(
+              children: [
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: boardCenter,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    boardCenter,
-                    const SizedBox(height: 16),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: leftPanel),
-                        const SizedBox(width: 8),
-                        Expanded(child: rightPanel),
-                      ],
+                    Expanded(
+                      child: SingleChildScrollView(child: leftPanel),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: SingleChildScrollView(child: rightPanel),
                     ),
                   ],
                 ),
-              ),
+              ],
             ),
           );
         },
@@ -757,6 +779,8 @@ class _SetupBoardCenter extends StatelessWidget {
   final bool canStart;
   final VoidCallback onStart;
   final ValueChanged<int> onCellTap;
+  final double maxHeight;
+  final double maxWidth;
 
   const _SetupBoardCenter({
     required this.size,
@@ -766,20 +790,28 @@ class _SetupBoardCenter extends StatelessWidget {
     required this.canStart,
     required this.onStart,
     required this.onCellTap,
+    required this.maxHeight,
+    required this.maxWidth,
   });
 
   @override
   Widget build(BuildContext context) {
-    final boardMaxWidth = SugorokuBoardLayout.maxBoardWidth(size);
+    const setupFooter = 78.0;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final boardWidth = constraints.maxWidth.isFinite
-            ? constraints.maxWidth.clamp(0.0, boardMaxWidth)
-            : boardMaxWidth;
+    final headerHeight = !canStart ? 72.0 : 52.0;
+    final boardAreaHeight =
+        (maxHeight - headerHeight - setupFooter).clamp(1.0, double.infinity);
+    final boardWidth = SugorokuBoardLayout.boardWidthFitting(
+      size: size,
+      maxWidth: maxWidth,
+      maxHeight: boardAreaHeight,
+    );
+        final boardFrame = boardWidth + SugorokuBoardLayout.framedPadding;
+        final boardHeight = SugorokuBoardLayout.boardHeightForWidth(size, boardWidth) +
+            SugorokuBoardLayout.framedPadding;
 
         return Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           children: [
             Text(
               'マスをタップして文字を入力できます',
@@ -794,20 +826,28 @@ class _SetupBoardCenter extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             SizedBox(
-              width: boardWidth,
-              child: SugorokuProgressBoardView(
-                size: size,
-                cells: cells,
-                pieces: pieces,
-                selectedPieceId: selectedPieceId,
-                compact: true,
-                editable: true,
-                onCellTap: onCellTap,
+              width: boardFrame,
+              height: boardAreaHeight.isFinite ? boardAreaHeight : boardHeight,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: SizedBox(
+                  width: boardFrame,
+                  height: boardHeight,
+                  child: SugorokuProgressBoardView(
+                    size: size,
+                    cells: cells,
+                    pieces: pieces,
+                    selectedPieceId: selectedPieceId,
+                    compact: true,
+                    editable: true,
+                    onCellTap: onCellTap,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 16),
             SizedBox(
-              width: boardWidth * 0.7,
+              width: boardFrame * 0.7,
               child: FilledButton.icon(
                 onPressed: canStart ? onStart : null,
                 icon: const Icon(Icons.play_arrow),
@@ -831,8 +871,6 @@ class _SetupBoardCenter extends StatelessWidget {
             ],
           ],
         );
-      },
-    );
   }
 }
 
@@ -1259,6 +1297,8 @@ class _BoardArea extends StatelessWidget {
   final bool awaitingAnimalPick;
   final bool canTapAdvance;
   final ValueChanged<AnimalSpot> onAnimalSelected;
+  final double maxHeight;
+  final double maxWidth;
 
   const _BoardArea({
     required this.size,
@@ -1270,68 +1310,90 @@ class _BoardArea extends StatelessWidget {
     required this.awaitingAnimalPick,
     required this.canTapAdvance,
     required this.onAnimalSelected,
+    required this.maxHeight,
+    required this.maxWidth,
   });
 
   @override
   Widget build(BuildContext context) {
-    final maxBoardWidth = SugorokuBoardLayout.maxBoardWidth(size);
+    const bannerHeight = 46.0;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final boardWidth = constraints.maxWidth.isFinite
-            ? constraints.maxWidth.clamp(0.0, maxBoardWidth)
-            : maxBoardWidth;
+    final secondaryAspect = mode.usesAnimalBoard
+        ? (size == SugorokuBoardSize.long20
+            ? 842 / 595
+            : size.gridColumns / size.gridRows)
+        : null;
+    final boardWidth = SugorokuBoardLayout.boardWidthFitting(
+      size: size,
+      maxWidth: maxWidth,
+      maxHeight: maxHeight,
+      overheadTop: bannerHeight,
+      gapBetween: mode.usesAnimalBoard ? 12 : 0,
+      secondaryAspectRatio: secondaryAspect,
+    );
+    final boardFrame = boardWidth + SugorokuBoardLayout.framedPadding;
+    final boardHeight = SugorokuBoardLayout.boardHeightForWidth(size, boardWidth) +
+        SugorokuBoardLayout.framedPadding;
+    final animalHeight =
+        secondaryAspect != null ? boardWidth / secondaryAspect : 0.0;
 
-        return SizedBox(
-          width: boardWidth,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                height: 38,
-                child: AnimatedOpacity(
-                  opacity: canTapAdvance ? 1 : 0,
-                  duration: const Duration(milliseconds: 150),
-                  child: Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 6,
-                      horizontal: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF176),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFF455A64)),
-                    ),
-                    child: const Text(
-                      '画面をタップして1マス進む',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                    ),
-                  ),
+    return SizedBox(
+      width: boardFrame,
+      height: maxHeight,
+      child: Column(
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          SizedBox(
+            height: bannerHeight,
+            child: AnimatedOpacity(
+              opacity: canTapAdvance ? 1 : 0,
+              duration: const Duration(milliseconds: 150),
+              child: Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF176),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFF455A64)),
+                ),
+                child: const Text(
+                  '画面をタップして1マス進む',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
               ),
-              SugorokuProgressBoardView(
-                size: size,
-                cells: cells,
-                pieces: pieces,
-                selectedPieceId: activePlayerIndex,
-              ),
-              if (mode.usesAnimalBoard) ...[
-                const SizedBox(height: 12),
-                SugorokuAnimalBoardView(
-                  size: size,
-                  mode: mode,
-                  hiddenState: hiddenState,
-                  enabled: awaitingAnimalPick,
-                  onAnimalSelected: onAnimalSelected,
-                ),
-              ],
-            ],
+            ),
           ),
-        );
-      },
+          SizedBox(
+            width: boardFrame,
+            height: boardHeight,
+            child: SugorokuProgressBoardView(
+              size: size,
+              cells: cells,
+              pieces: pieces,
+              selectedPieceId: activePlayerIndex,
+            ),
+          ),
+          if (mode.usesAnimalBoard) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: boardWidth,
+              height: animalHeight,
+              child: SugorokuAnimalBoardView(
+                size: size,
+                mode: mode,
+                hiddenState: hiddenState,
+                enabled: awaitingAnimalPick,
+                onAnimalSelected: onAnimalSelected,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
