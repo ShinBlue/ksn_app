@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'sugoroku_board_layout.dart';
+import 'sugoroku_boards.dart';
 import 'sugoroku_models.dart';
 
 /// 進行用すごろく盤（散らしたマス＋矢印で接続）
@@ -157,24 +158,33 @@ class _BoardCell extends StatelessWidget {
     this.onTap,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    final isStart = index == 0;
-    final isGoal = index == cellCount - 1;
+  bool _isCustomLabel() {
+    final defaultCell = SugorokuBoardDefaults.defaultCellAt(boardSize, index);
+    return cell.hasLabel && cell.label.trim() != defaultCell.label.trim();
+  }
 
-    Color fill;
-    if (isStart) {
-      fill = const Color(0xFFA5D6A7);
-    } else if (isGoal) {
-      fill = const Color(0xFFF8BBD0);
-    } else if (cell.action != SugorokuCellAction.none) {
-      fill = const Color(0xFFFFF176);
-    } else {
-      fill = const Color(0xFFB3E5FC);
+  bool _showsHoverPreview() {
+    if (!_isCustomLabel()) return false;
+    return cell.label.replaceAll('\n', '').trim().length >= 4;
+  }
+
+  Color _cellFillColor() {
+    const yellow = Color(0xFFFFF176);
+    const blue = Color(0xFFB3E5FC);
+    const green = Color(0xFFA5D6A7);
+    const pink = Color(0xFFF8BBD0);
+
+    if (_isCustomLabel()) {
+      return yellow;
     }
 
-    final showLabel = cell.hasLabel && (piecesHere.isEmpty || editable);
+    if (index == 0) return green;
+    if (index == cellCount - 1) return pink;
+    if (cell.action != SugorokuCellAction.none) return yellow;
+    return blue;
+  }
 
+  Widget _buildCellBody(Color fill, bool showLabel) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -245,6 +255,46 @@ class _BoardCell extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fill = _cellFillColor();
+    final showLabel = cell.hasLabel && (piecesHere.isEmpty || editable);
+    final cellBody = _buildCellBody(fill, showLabel);
+
+    if (!_showsHoverPreview()) return cellBody;
+
+    return Tooltip(
+      richMessage: TextSpan(
+        text: cell.label,
+        style: const TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF263238),
+          height: 1.35,
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFDE7),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF455A64), width: 2),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x44000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      preferBelow: false,
+      verticalOffset: 28,
+      waitDuration: const Duration(milliseconds: 120),
+      showDuration: const Duration(seconds: 30),
+      child: cellBody,
     );
   }
 }
