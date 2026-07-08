@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../analytics_service.dart';
 import '../sound_service.dart';
 import 'sugoroku_animal_board_view.dart';
+import 'sugoroku_board_layout.dart';
 import 'sugoroku_board_view.dart';
 import 'sugoroku_boards.dart';
 import 'sugoroku_heart_number.dart';
@@ -284,17 +285,11 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
       'チョキ' => 2,
       _ => 1,
     };
-    final word = switch (hand) {
-      'グー' => 'ぐみ',
-      'パー' => 'パイン',
-      'チョキ' => 'ハサミ',
-      _ => hand,
-    };
 
     setState(() {
       _remainingSteps = steps;
       _diceValue = null;
-      _message = '$hand → $word（$stepsマス）。画面をタップ';
+      _message = '$hand（$stepsマス）。画面をタップ';
     });
   }
 
@@ -587,7 +582,7 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 960),
+                  constraints: const BoxConstraints(maxWidth: 1120),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -775,8 +770,7 @@ class _SetupBoardCenter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final boardMaxWidth =
-        size == SugorokuBoardSize.long20 ? 480.0 : 400.0;
+    final boardMaxWidth = SugorokuBoardLayout.maxBoardWidth(size);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1280,8 +1274,7 @@ class _BoardArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxBoardWidth =
-        size == SugorokuBoardSize.long20 ? 480.0 : 400.0;
+    final maxBoardWidth = SugorokuBoardLayout.maxBoardWidth(size);
 
     return LayoutBuilder(
       builder: (context, constraints) {

@@ -73,9 +73,10 @@ class SugorokuProgressBoardView extends StatelessWidget {
                     cell: cells[i],
                     index: i,
                     cellCount: cells.length,
+                    boardSize: size,
                     piecesHere: pieces.where((p) => p.position == i).toList(),
                     selectedPieceId: selectedPieceId,
-                    compact: compact || size == SugorokuBoardSize.long20,
+                    compactPieces: compact || size == SugorokuBoardSize.long20,
                     editable: editable,
                     onTap: editable && onCellTap != null
                         ? () => onCellTap!(i)
@@ -114,9 +115,10 @@ class _BoardCell extends StatelessWidget {
   final SugorokuCellDef cell;
   final int index;
   final int cellCount;
+  final SugorokuBoardSize boardSize;
   final List<SugorokuPiece> piecesHere;
   final int? selectedPieceId;
-  final bool compact;
+  final bool compactPieces;
   final bool editable;
   final VoidCallback? onTap;
 
@@ -124,9 +126,10 @@ class _BoardCell extends StatelessWidget {
     required this.cell,
     required this.index,
     required this.cellCount,
+    required this.boardSize,
     required this.piecesHere,
     required this.selectedPieceId,
-    required this.compact,
+    required this.compactPieces,
     this.editable = false,
     this.onTap,
   });
@@ -177,15 +180,21 @@ class _BoardCell extends StatelessWidget {
               if (showLabel)
                 Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(3),
-                    child: Text(
-                      cell.label,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: compact ? 8 : 10,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF37474F),
-                        height: 1.1,
+                    padding: const EdgeInsets.all(4),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        cell.label,
+                        textAlign: TextAlign.center,
+                        maxLines: 3,
+                        style: TextStyle(
+                          fontSize: boardSize == SugorokuBoardSize.long20
+                              ? 13
+                              : 15,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF263238),
+                          height: 1.15,
+                        ),
                       ),
                     ),
                   ),
@@ -197,7 +206,7 @@ class _BoardCell extends StatelessWidget {
                     child: _PiecesCluster(
                       pieces: piecesHere,
                       selectedPieceId: selectedPieceId,
-                      compact: compact,
+                      compact: compactPieces,
                     ),
                   ),
                 ),
@@ -205,7 +214,7 @@ class _BoardCell extends StatelessWidget {
                 Center(
                   child: Icon(
                     Icons.add,
-                    size: compact ? 12 : 14,
+                    size: compactPieces ? 12 : 14,
                     color: Colors.grey.shade500,
                   ),
                 ),

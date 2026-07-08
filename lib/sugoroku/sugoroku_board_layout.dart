@@ -6,52 +6,62 @@ import 'sugoroku_models.dart';
 
 /// すごろく盤のマス位置（0〜1 の正規化座標）と矢印描画。
 abstract final class SugorokuBoardLayout {
+  static const boardWidthScale = 1.5;
+  static const boardHeightScale = 1.2;
+
   /// 10マス：ジグザグに散らし、順番どおり矢印で接続。
   static const short10Centers = <Offset>[
-    Offset(0.10, 0.78),
-    Offset(0.30, 0.88),
-    Offset(0.52, 0.74),
-    Offset(0.74, 0.86),
-    Offset(0.92, 0.70),
-    Offset(0.78, 0.50),
-    Offset(0.54, 0.58),
-    Offset(0.30, 0.44),
-    Offset(0.12, 0.30),
-    Offset(0.50, 0.10),
+    Offset(0.06, 0.84),
+    Offset(0.24, 0.92),
+    Offset(0.44, 0.80),
+    Offset(0.64, 0.90),
+    Offset(0.90, 0.78),
+    Offset(0.82, 0.54),
+    Offset(0.58, 0.60),
+    Offset(0.34, 0.46),
+    Offset(0.10, 0.32),
+    Offset(0.48, 0.06),
   ];
 
-  /// 20マス：縦長に散らしたジグザグ経路（端は内側に収める）。
+  /// 20マス：縦長に散らしたジグザグ経路（マス同士が重ならないよう間隔を確保）。
   static const long20Centers = <Offset>[
-    Offset(0.12, 0.90),
-    Offset(0.30, 0.85),
-    Offset(0.50, 0.92),
-    Offset(0.70, 0.87),
-    Offset(0.88, 0.80),
-    Offset(0.80, 0.68),
-    Offset(0.58, 0.72),
-    Offset(0.34, 0.66),
-    Offset(0.14, 0.70),
-    Offset(0.12, 0.54),
-    Offset(0.32, 0.48),
-    Offset(0.56, 0.52),
-    Offset(0.78, 0.46),
-    Offset(0.88, 0.36),
-    Offset(0.74, 0.26),
-    Offset(0.52, 0.30),
-    Offset(0.28, 0.24),
-    Offset(0.12, 0.18),
-    Offset(0.38, 0.10),
-    Offset(0.68, 0.08),
+    Offset(0.05, 0.94),
+    Offset(0.20, 0.88),
+    Offset(0.36, 0.94),
+    Offset(0.52, 0.88),
+    Offset(0.68, 0.94),
+    Offset(0.88, 0.86),
+    Offset(0.82, 0.70),
+    Offset(0.62, 0.74),
+    Offset(0.42, 0.68),
+    Offset(0.22, 0.74),
+    Offset(0.05, 0.60),
+    Offset(0.18, 0.46),
+    Offset(0.36, 0.50),
+    Offset(0.54, 0.44),
+    Offset(0.72, 0.48),
+    Offset(0.90, 0.38),
+    Offset(0.76, 0.24),
+    Offset(0.54, 0.28),
+    Offset(0.30, 0.20),
+    Offset(0.50, 0.04),
   ];
 
   static List<Offset> centersFor(SugorokuBoardSize size) =>
       size == SugorokuBoardSize.short10 ? short10Centers : long20Centers;
 
-  static double aspectRatio(SugorokuBoardSize size) =>
-      size == SugorokuBoardSize.short10 ? 1.15 : 0.72;
+  static double maxBoardWidth(SugorokuBoardSize size) {
+    final base = size == SugorokuBoardSize.short10 ? 400.0 : 480.0;
+    return base * boardWidthScale;
+  }
+
+  static double aspectRatio(SugorokuBoardSize size) {
+    final base = size == SugorokuBoardSize.short10 ? 1.15 : 0.72;
+    return base * boardWidthScale / boardHeightScale;
+  }
 
   static double cellFraction(SugorokuBoardSize size) =>
-      size == SugorokuBoardSize.short10 ? 0.17 : 0.11;
+      size == SugorokuBoardSize.short10 ? 0.16 : 0.095;
 }
 
 class SugorokuBoardArrowsPainter extends CustomPainter {

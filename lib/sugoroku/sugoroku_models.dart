@@ -29,8 +29,7 @@ extension SugorokuPlayModeX on SugorokuPlayMode {
 
   String get description => switch (this) {
         SugorokuPlayMode.dice => 'サイコロの目の数だけ進む',
-        SugorokuPlayMode.janken =>
-          'グー→ぐみ(2)、パー→パイン(3)、チョキ→ハサミ(2)',
+        SugorokuPlayMode.janken => 'グー・チョキは2マス、パーは3マス',
         SugorokuPlayMode.animalPick => '動物を選んで、名前の文字数だけ進む',
         SugorokuPlayMode.hiddenNumber => '数字をタップして動物を当て、文字数だけ進む',
       };
