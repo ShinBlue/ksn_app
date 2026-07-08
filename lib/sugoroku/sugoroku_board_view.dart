@@ -158,6 +158,13 @@ class _BoardCell extends StatelessWidget {
     this.onTap,
   });
 
+  TextStyle get _labelTextStyle => TextStyle(
+        fontSize: boardSize == SugorokuBoardSize.long20 ? 13 : 15,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFF263238),
+        height: 1.15,
+      );
+
   bool _isCustomLabel() {
     final defaultCell = SugorokuBoardDefaults.defaultCellAt(boardSize, index);
     return cell.hasLabel && cell.label.trim() != defaultCell.label.trim();
@@ -220,14 +227,7 @@ class _BoardCell extends StatelessWidget {
                         cell.label,
                         textAlign: TextAlign.center,
                         maxLines: 3,
-                        style: TextStyle(
-                          fontSize: boardSize == SugorokuBoardSize.long20
-                              ? 13
-                              : 15,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF263238),
-                          height: 1.15,
-                        ),
+                        style: _labelTextStyle,
                       ),
                     ),
                   ),
@@ -269,14 +269,9 @@ class _BoardCell extends StatelessWidget {
     return Tooltip(
       richMessage: TextSpan(
         text: cell.label,
-        style: const TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF263238),
-          height: 1.35,
-        ),
+        style: _labelTextStyle,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       margin: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
         color: const Color(0xFFFFFDE7),
