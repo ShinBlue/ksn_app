@@ -3,6 +3,11 @@ import 'sugoroku_models.dart';
 abstract final class SugorokuAnimals {
   static const boardImage20 = 'assets/images/盤面/動物盤面.png';
 
+  /// 20マス動物盤（5列×4行）
+  static const boardColumns20 = 5;
+  static const boardRows20 = 4;
+  static const boardAspectRatio20 = 1024 / 570;
+
   /// 20マス盤の動物（画像上 4列×5行、左上から右へ）
   static const all20 = [
     AnimalSpot(index: 0, name: 'ぶた'),
@@ -34,14 +39,27 @@ abstract final class SugorokuAnimals {
   static List<AnimalSpot> forSize(SugorokuBoardSize size) =>
       size == SugorokuBoardSize.short10 ? all10 : all20;
 
-  /// 個別イラストがある動物（10マスカード表示用）
+  /// 個別イラスト（10マスカード・20マス盤共通）
   static const imageByName = {
-    'うさぎ': 'assets/images/動物/うさぎ.jpg',
+    'ぶた': 'assets/images/動物/ぶた.jpg',
+    'たぬき': 'assets/images/動物/たぬき.jpg',
+    'こあら': 'assets/images/動物/こあら.jpg',
+    'やぎ': 'assets/images/動物/やぎ.jpg',
+    'からす': 'assets/images/動物/からす.jpg',
+    'かば': 'assets/images/動物/かば.jpg',
+    'うま': 'assets/images/動物/うま.jpg',
+    'こうもり': 'assets/images/動物/こうもり.jpg',
+    'ぱんだ': 'assets/images/動物/ぱんだ.jpg',
     'さる': 'assets/images/動物/さる.jpg',
+    'らいおん': 'assets/images/動物/らいおん.jpg',
+    'うさぎ': 'assets/images/動物/うさぎ.jpg',
+    'ぞう': 'assets/images/動物/ぞう.jpg',
+    'ごりら': 'assets/images/動物/ごりら.jpg',
+    'うし': 'assets/images/動物/うし.jpg',
+    'ひつじ': 'assets/images/動物/ひつじ.jpg',
+    'しまうま': 'assets/images/動物/しまうま.jpg',
+    'いのしし': 'assets/images/動物/いのしし.jpg',
     'ねこ': 'assets/images/動物/ねこ.jpg',
-    'ごりら': 'assets/images/動物/ゴリラ.jpg',
-    'こあら': 'assets/images/動物/コアラ.jpg',
-    'ぱんだ': 'assets/images/動物/パンダ.jpg',
-    'らいおん': 'assets/images/動物/ライオン.jpg',
+    'なまけもの': 'assets/images/動物/なまけもの.jpg',
   };
 }

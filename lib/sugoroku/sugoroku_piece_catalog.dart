@@ -29,25 +29,25 @@ abstract final class SugorokuPieceCatalog {
   static const candidates = [
     PieceCandidate(
       id: 'blue_circle',
-      name: '青丸',
+      name: 'あおまる',
       color: Color(0xFF1565C0),
       shape: SugorokuPieceShape.circle,
     ),
     PieceCandidate(
       id: 'red_circle',
-      name: '赤丸',
+      name: 'あかまる',
       color: Color(0xFFE53935),
       shape: SugorokuPieceShape.circle,
     ),
     PieceCandidate(
       id: 'green_triangle',
-      name: '緑三角',
+      name: 'みどりさんかく',
       color: Color(0xFF43A047),
       shape: SugorokuPieceShape.triangle,
     ),
     PieceCandidate(
       id: 'purple_circle',
-      name: '紫丸',
+      name: 'むらさきまる',
       color: Color(0xFF8E24AA),
       shape: SugorokuPieceShape.circle,
     ),

@@ -4,6 +4,14 @@ import 'sugoroku_animals.dart';
 import 'sugoroku_heart_number.dart';
 import 'sugoroku_models.dart';
 
+enum AnimalBoardLayout {
+  /// 盤面下または画像盤（デフォルト）
+  standard,
+
+  /// 20マス用・右パネル内の2列カード
+  sidePanel,
+}
+
 /// 動物選択盤（③④用）。10マス=2×5カード、20マス=画像+タップ。
 class SugorokuAnimalBoardView extends StatelessWidget {
   final SugorokuBoardSize size;
@@ -11,6 +19,7 @@ class SugorokuAnimalBoardView extends StatelessWidget {
   final HiddenNumberBoardState? hiddenState;
   final ValueChanged<AnimalSpot> onAnimalSelected;
   final bool enabled;
+  final AnimalBoardLayout layout;
 
   const SugorokuAnimalBoardView({
     super.key,
@@ -19,11 +28,22 @@ class SugorokuAnimalBoardView extends StatelessWidget {
     required this.onAnimalSelected,
     this.hiddenState,
     this.enabled = true,
+    this.layout = AnimalBoardLayout.standard,
   });
 
   @override
   Widget build(BuildContext context) {
     final animals = SugorokuAnimals.forSize(size);
+    if (size == SugorokuBoardSize.long20 &&
+        layout == AnimalBoardLayout.sidePanel) {
+      return _AnimalSidePanelGrid(
+        animals: animals,
+        mode: mode,
+        hiddenState: hiddenState,
+        onAnimalSelected: onAnimalSelected,
+        enabled: enabled,
+      );
+    }
     if (size == SugorokuBoardSize.long20) {
       return _AnimalImageBoard(
         animals: animals,
@@ -61,10 +81,10 @@ class _AnimalImageBoard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const columns = 4;
-    const rows = 5;
+    const columns = SugorokuAnimals.boardColumns20;
+    const rows = SugorokuAnimals.boardRows20;
     return AspectRatio(
-      aspectRatio: 842 / 595,
+      aspectRatio: SugorokuAnimals.boardAspectRatio20,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final boardSize = Size(constraints.maxWidth, constraints.maxHeight);
@@ -76,7 +96,7 @@ class _AnimalImageBoard extends StatelessWidget {
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) => ColoredBox(
                   color: Colors.grey.shade200,
-                  child: const Center(child: Text('動物盤面を読み込めません')),
+                  child: const Center(child: Text('どうぶつばんめんをよみこめません')),
                 ),
               ),
               for (final animal in animals)
@@ -141,6 +161,110 @@ class _AnimalImageBoard extends StatelessWidget {
   }
 }
 
+class _AnimalSidePanelGrid extends StatelessWidget {
+  final List<AnimalSpot> animals;
+  final SugorokuPlayMode mode;
+  final HiddenNumberBoardState? hiddenState;
+  final ValueChanged<AnimalSpot> onAnimalSelected;
+  final bool enabled;
+
+  const _AnimalSidePanelGrid({
+    required this.animals,
+    required this.mode,
+    required this.hiddenState,
+    required this.onAnimalSelected,
+    required this.enabled,
+  });
+
+  static const _columns = 2;
+  static const _spacing = 3.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final rows = (animals.length / _columns).ceil();
+        final availW = constraints.maxWidth.clamp(1.0, double.infinity);
+        final availH = constraints.maxHeight.clamp(1.0, double.infinity);
+        final cellW = (availW - _spacing * (_columns - 1)) / _columns;
+        final cellH = (availH - _spacing * (rows - 1)) / rows;
+        final cardStyle = _AnimalCardStyle.forCell(cellW, cellH);
+
+        return GridView.builder(
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: _columns,
+            crossAxisSpacing: _spacing,
+            mainAxisSpacing: _spacing,
+            childAspectRatio: cellW / cellH,
+          ),
+          itemCount: animals.length,
+          itemBuilder: (context, i) {
+            final animal = animals[i];
+            return _AnimalCard(
+              animal: animal,
+              mode: mode,
+              hiddenState: hiddenState,
+              enabled: enabled,
+              style: cardStyle,
+              onTap: () => onAnimalSelected(animal),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _AnimalCardStyle {
+  final double borderRadius;
+  final double borderWidth;
+  final double padding;
+  final double nameFontSize;
+  final double badgeSize;
+  final double hintIconSize;
+  final bool showHint;
+  final bool showName;
+
+  const _AnimalCardStyle({
+    required this.borderRadius,
+    required this.borderWidth,
+    required this.padding,
+    required this.nameFontSize,
+    required this.badgeSize,
+    required this.hintIconSize,
+    required this.showHint,
+    required this.showName,
+  });
+
+  factory _AnimalCardStyle.standard({required bool compact}) {
+    return _AnimalCardStyle(
+      borderRadius: compact ? 8 : 14,
+      borderWidth: compact ? 1.5 : 2.5,
+      padding: compact ? 3 : 6,
+      nameFontSize: compact ? 9 : 12,
+      badgeSize: compact ? 32 : 48,
+      hintIconSize: compact ? 12 : 16,
+      showHint: true,
+      showName: true,
+    );
+  }
+
+  factory _AnimalCardStyle.forCell(double width, double height) {
+    final minSide = width < height ? width : height;
+    return _AnimalCardStyle(
+      borderRadius: (minSide * 0.14).clamp(3.0, 8.0),
+      borderWidth: (minSide * 0.04).clamp(1.0, 2.0),
+      padding: (minSide * 0.06).clamp(1.0, 4.0),
+      nameFontSize: (minSide * 0.16).clamp(6.0, 10.0),
+      badgeSize: (minSide * 0.72).clamp(18.0, 36.0),
+      hintIconSize: (minSide * 0.22).clamp(8.0, 14.0),
+      showHint: minSide >= 34,
+      showName: minSide >= 28,
+    );
+  }
+}
+
 class _AnimalCardGrid extends StatelessWidget {
   final List<AnimalSpot> animals;
   final int columns;
@@ -191,14 +315,16 @@ class _AnimalCard extends StatelessWidget {
   final HiddenNumberBoardState? hiddenState;
   final VoidCallback onTap;
   final bool enabled;
+  final _AnimalCardStyle style;
 
-  const _AnimalCard({
+  _AnimalCard({
     required this.animal,
     required this.mode,
     required this.hiddenState,
     required this.onTap,
     required this.enabled,
-  });
+    _AnimalCardStyle? style,
+  }) : style = style ?? _AnimalCardStyle.standard(compact: false);
 
   @override
   Widget build(BuildContext context) {
@@ -209,66 +335,78 @@ class _AnimalCard extends StatelessWidget {
 
     return Material(
       color: const Color(0xFFFFF8E1),
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(style.borderRadius),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(style.borderRadius),
         onTap: enabled ? onTap : null,
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFF66BB6A), width: 2.5),
+            borderRadius: BorderRadius.circular(style.borderRadius),
+            border: Border.all(
+              color: const Color(0xFF66BB6A),
+              width: style.borderWidth,
+            ),
           ),
-          padding: const EdgeInsets.all(6),
+          padding: EdgeInsets.all(style.padding),
           child: Stack(
             fit: StackFit.expand,
             children: [
               if (!hidden) ...[
                 if (imagePath != null)
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius:
+                        BorderRadius.circular(style.borderRadius * 0.5),
                     child: Image.asset(
                       imagePath,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => _nameFallback(),
+                      errorBuilder: (context, error, stackTrace) =>
+                          _nameFallback(style.nameFontSize),
                     ),
                   )
                 else
-                  _nameFallback(),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      animal.name,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                  _nameFallback(style.nameFontSize),
+                if (style.showName)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        vertical: style.padding.clamp(0, 2),
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(
+                          style.borderRadius * 0.5,
+                        ),
+                      ),
+                      child: Text(
+                        animal.name,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: style.nameFontSize,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                ),
               ],
               if (hidden)
                 Center(
                   child: HeartNumberBadge(
                     number: hiddenState!.numberAt(animal.index),
                     color: hiddenState!.colorAt(animal.index),
-                    size: 48,
+                    size: style.badgeSize,
                   ),
                 ),
-              if (mode == SugorokuPlayMode.animalPick && !hidden)
+              if (mode == SugorokuPlayMode.animalPick && !hidden && style.showHint)
                 Align(
                   alignment: Alignment.topRight,
                   child: Icon(
                     Icons.touch_app,
-                    size: 16,
+                    size: style.hintIconSize,
                     color: Colors.green.shade700,
                   ),
                 ),
@@ -279,14 +417,17 @@ class _AnimalCard extends StatelessWidget {
     );
   }
 
-  Widget _nameFallback() {
+  Widget _nameFallback(double fontSize) {
     return Center(
       child: Text(
         animal.name,
-        style: const TextStyle(
-          fontSize: 20,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: fontSize,
           fontWeight: FontWeight.bold,
-          color: Color(0xFF455A64),
+          color: const Color(0xFF455A64),
         ),
       ),
     );

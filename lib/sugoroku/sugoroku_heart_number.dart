@@ -66,12 +66,12 @@ class HeartNumberBadge extends StatelessWidget {
           child: Text(
             '$number',
             style: TextStyle(
-              color: Colors.white,
+              color: const Color(0xFF263238),
               fontSize: size * 0.38,
               fontWeight: FontWeight.bold,
               shadows: const [
                 Shadow(
-                  color: Color(0x66000000),
+                  color: Color(0x66FFFFFF),
                   offset: Offset(0, 1),
                   blurRadius: 2,
                 ),

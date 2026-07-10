@@ -94,6 +94,71 @@ abstract final class SugorokuBoardLayout {
 
   static double boardHeightForWidth(SugorokuBoardSize size, double width) =>
       width / aspectRatio(size);
+
+  /// 20マス＋動物盤を横並びにしたときの寸法（盤左・動物右）。
+  static ({
+    double boardWidth,
+    double boardHeight,
+    double animalWidth,
+    double animalHeight,
+    double totalWidth,
+  }) sideBySideDimensionsFitting({
+    required SugorokuBoardSize size,
+    required double maxWidth,
+    required double maxHeight,
+    required double secondaryAspectRatio,
+    double overheadTop = 0,
+    double gapBetween = 12,
+  }) {
+    final aspect = aspectRatio(size);
+    final framePad = framedPadding;
+    final availW = (maxWidth - framePad).clamp(1.0, double.infinity);
+    final availH =
+        (maxHeight - framePad - overheadTop).clamp(1.0, double.infinity);
+
+    final height =
+        ((availW - gapBetween) / (aspect + secondaryAspectRatio))
+            .clamp(1.0, availH);
+    final boardWidth = height * aspect;
+    final animalWidth = height * secondaryAspectRatio;
+
+    return (
+      boardWidth: boardWidth,
+      boardHeight: height,
+      animalWidth: animalWidth,
+      animalHeight: height,
+      totalWidth: boardWidth + gapBetween + animalWidth + framePad,
+    );
+  }
+
+  /// 動物盤カラムの幅（従来レイアウトと同じ計算で維持）。
+  static double animalColumnWidthFitting({
+    required SugorokuBoardSize size,
+    required double maxWidth,
+    required double maxHeight,
+    required double secondaryAspectRatio,
+    double overheadTop = 0,
+    double gapBetween = 12,
+  }) {
+    if (size == SugorokuBoardSize.long20) {
+      return sideBySideDimensionsFitting(
+        size: size,
+        maxWidth: maxWidth,
+        maxHeight: maxHeight,
+        secondaryAspectRatio: secondaryAspectRatio,
+        overheadTop: overheadTop,
+        gapBetween: gapBetween,
+      ).animalWidth;
+    }
+    return boardWidthFitting(
+      size: size,
+      maxWidth: maxWidth,
+      maxHeight: maxHeight,
+      overheadTop: overheadTop,
+      gapBetween: gapBetween,
+      secondaryAspectRatio: secondaryAspectRatio,
+    );
+  }
 }
 
 class SugorokuBoardArrowsPainter extends CustomPainter {

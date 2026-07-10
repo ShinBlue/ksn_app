@@ -30,7 +30,7 @@ abstract final class SugorokuMovement {
         }(),
       SugorokuCellAction.skipTurn => () {
           markSkipNextTurn(piece.id);
-          return '一回休み！';
+          return 'おやすみ！';
         }(),
       SugorokuCellAction.none => '',
     };
@@ -63,7 +63,7 @@ abstract final class SugorokuMovement {
     if (remaining > 0) {
       return (
         remaining: remaining,
-        message: 'あと$remainingマス（画面をタップ）',
+        message: 'あと$remainingます（がめんをタップ）',
       );
     }
 
@@ -76,6 +76,6 @@ abstract final class SugorokuMovement {
     if (effect.isNotEmpty) {
       return (remaining: 0, message: effect);
     }
-    return (remaining: 0, message: '${piece.name}が進みました');
+    return (remaining: 0, message: '${piece.name}がすすんだよ');
   }
 }

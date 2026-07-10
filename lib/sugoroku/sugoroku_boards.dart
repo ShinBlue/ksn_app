@@ -21,12 +21,12 @@ abstract final class SugorokuBoardDefaults {
     if (size == SugorokuBoardSize.short10) {
       return switch (index) {
         3 => const SugorokuCellDef(
-            label: '一個\n進む',
+            label: 'ひとつ\nすすむ',
             action: SugorokuCellAction.moveForward,
             value: 1,
           ),
         6 => const SugorokuCellDef(
-            label: '一回\n休み',
+            label: 'おやすみ',
             action: SugorokuCellAction.skipTurn,
           ),
         _ => const SugorokuCellDef(),
@@ -34,21 +34,21 @@ abstract final class SugorokuBoardDefaults {
     }
     return switch (index) {
       4 => const SugorokuCellDef(
-          label: '一個\n進む',
+          label: 'ひとつ\nすすむ',
           action: SugorokuCellAction.moveForward,
           value: 1,
         ),
       9 => const SugorokuCellDef(
-          label: '二個\n進む',
+          label: 'ふたつ\nすすむ',
           action: SugorokuCellAction.moveForward,
           value: 2,
         ),
       14 => const SugorokuCellDef(
-          label: '一回\n休み',
+          label: 'おやすみ',
           action: SugorokuCellAction.skipTurn,
         ),
       17 => const SugorokuCellDef(
-          label: '一個\n戻る',
+          label: 'ひとつ\nもどる',
           action: SugorokuCellAction.moveBackward,
           value: 1,
         ),

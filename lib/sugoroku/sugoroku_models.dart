@@ -16,22 +16,22 @@ extension SugorokuBoardSizeX on SugorokuBoardSize {
 
   int get gridRows => this == SugorokuBoardSize.short10 ? 2 : 5;
 
-  String get label => this == SugorokuBoardSize.short10 ? '10マス（短い）' : '20マス（長い）';
+  String get label => this == SugorokuBoardSize.short10 ? '10ます（みじかい）' : '20ます（ながい）';
 }
 
 extension SugorokuPlayModeX on SugorokuPlayMode {
   String get label => switch (this) {
         SugorokuPlayMode.dice => 'サイコロ',
         SugorokuPlayMode.janken => 'じゃんけん',
-        SugorokuPlayMode.animalPick => '動物を選ぶ',
-        SugorokuPlayMode.hiddenNumber => '数字当て',
+        SugorokuPlayMode.animalPick => 'どうぶつをえらぶ',
+        SugorokuPlayMode.hiddenNumber => 'すうじあて',
       };
 
   String get description => switch (this) {
-        SugorokuPlayMode.dice => 'サイコロの目の数だけ進む',
-        SugorokuPlayMode.janken => 'グー・チョキは2マス、パーは3マス',
-        SugorokuPlayMode.animalPick => '動物を選んで、名前の文字数だけ進む',
-        SugorokuPlayMode.hiddenNumber => '数字をタップして動物を当て、文字数だけ進む',
+        SugorokuPlayMode.dice => 'サイコロのめのかずだけすすむ',
+        SugorokuPlayMode.janken => 'グー・チョキは2ます、パーは3ます',
+        SugorokuPlayMode.animalPick => 'どうぶつをえらんで、なまえのかずだけすすむ',
+        SugorokuPlayMode.hiddenNumber => 'すうじをタップしてどうぶつをあてて、かずだけすすむ',
       };
 
   bool get usesAnimalBoard =>
