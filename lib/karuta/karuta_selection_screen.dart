@@ -594,6 +594,7 @@ class _KarutaRowSection extends StatelessWidget {
       children: [
         SizedBox(
           width: metrics.rowButtonWidth,
+          height: metrics.tileHeight,
           child: _RowToggleButton(
             label: row.label,
             metrics: metrics,
@@ -669,16 +670,20 @@ class _RowToggleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final active = fullySelected || partiallySelected;
-    final iconSize = 15.0;
-
     return Material(
-      color: fullySelected ? const Color(0xFFFFF3E0) : Colors.white,
+      color: fullySelected
+          ? const Color(0xFF43A047)
+          : partiallySelected
+              ? const Color(0xFFC8E6C9)
+              : Colors.white,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onTap: onTap,
         child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          alignment: Alignment.center,
           padding: EdgeInsets.symmetric(
             horizontal: 4 * metrics.scale,
             vertical: 4 * metrics.scale,
@@ -687,36 +692,24 @@ class _RowToggleButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: fullySelected
-                  ? const Color(0xFF43A047)
+                  ? const Color(0xFF2E7D32)
                   : partiallySelected
                       ? const Color(0xFF81C784)
                       : Colors.grey.shade300,
               width: fullySelected ? 2 : 1,
             ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: metrics.rowLabelFontSize,
-                  fontWeight: FontWeight.bold,
-                  color:
-                      active ? const Color(0xFF2E7D32) : Colors.grey.shade700,
-                ),
-              ),
-              SizedBox(height: 2 * metrics.scale),
-              Icon(
-                fullySelected
-                    ? Icons.check_box
-                    : partiallySelected
-                        ? Icons.indeterminate_check_box
-                        : Icons.check_box_outline_blank,
-                size: iconSize,
-                color: active ? const Color(0xFF43A047) : Colors.grey.shade500,
-              ),
-            ],
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: metrics.rowLabelFontSize,
+              fontWeight: FontWeight.bold,
+              color: fullySelected
+                  ? Colors.white
+                  : partiallySelected
+                      ? const Color(0xFF2E7D32)
+                      : Colors.grey.shade700,
+            ),
           ),
         ),
       ),
