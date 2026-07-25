@@ -341,7 +341,7 @@ class _GameButtonList extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _GameButton(
-            label: 'まるばつゲーム',
+            label: 'OXゲーム(三目並べ）',
             icon: Icons.grid_3x3,
             color: const Color(0xFF64B5F6),
             compact: compact,

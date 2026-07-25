@@ -21,6 +21,10 @@ class SugorokuAnimalBoardView extends StatelessWidget {
   final bool enabled;
   final AnimalBoardLayout layout;
 
+  /// 表示する動物リストの明示指定（省略時は [SugorokuAnimals.forSize]）。
+  /// 10マス盤はゲーム開始ごとにランダム抽選した固定リストを渡す想定。
+  final List<AnimalSpot>? animals;
+
   const SugorokuAnimalBoardView({
     super.key,
     required this.size,
@@ -29,11 +33,12 @@ class SugorokuAnimalBoardView extends StatelessWidget {
     this.hiddenState,
     this.enabled = true,
     this.layout = AnimalBoardLayout.standard,
+    this.animals,
   });
 
   @override
   Widget build(BuildContext context) {
-    final animals = SugorokuAnimals.forSize(size);
+    final animals = this.animals ?? SugorokuAnimals.forSize(size);
     if (size == SugorokuBoardSize.long20 &&
         layout == AnimalBoardLayout.sidePanel) {
       return _AnimalSidePanelGrid(

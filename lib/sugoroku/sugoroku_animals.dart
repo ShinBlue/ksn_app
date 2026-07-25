@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'sugoroku_models.dart';
 
 abstract final class SugorokuAnimals {
@@ -32,9 +34,42 @@ abstract final class SugorokuAnimals {
     AnimalSpot(index: 19, name: 'なまけもの'),
   ];
 
-  /// 10マス盤の動物（2列×5行、別デザインのカード用）
-  static List<AnimalSpot> get all10 =>
-      all20.take(10).toList(growable: false);
+  /// 10マス盤の動物選出条件（文字数: 選出数）2文字×3・3文字×4・4文字×3
+  static const _tenPickCounts = {2: 3, 3: 4, 4: 3};
+
+  /// 10マス盤の動物（2列×5行、別デザインのカード用）の既定リスト
+  /// index は数字当てのハート配列（0〜9）に合わせて振り直し済み
+  static List<AnimalSpot> get all10 => _assignIndices(
+        _tenPickCounts.entries
+            .expand((e) => all20
+                .where((a) => a.name.length == e.key)
+                .take(e.value)
+                .map((a) => a.name))
+            .toList(growable: false),
+      );
+
+  /// 10マス盤の動物を毎回ランダムに選出（条件は [_tenPickCounts] と同じ）
+  /// index は数字当てのハート配列（0〜9）に合わせて振り直す
+  static List<AnimalSpot> randomAll10(Random random) {
+    final namesByLength = <int, List<String>>{};
+    for (final animal in all20) {
+      namesByLength
+          .putIfAbsent(animal.name.length, () => [])
+          .add(animal.name);
+    }
+    final selectedNames = <String>[];
+    _tenPickCounts.forEach((length, count) {
+      final pool = List<String>.from(namesByLength[length]!)..shuffle(random);
+      selectedNames.addAll(pool.take(count));
+    });
+    selectedNames.shuffle(random);
+    return _assignIndices(selectedNames);
+  }
+
+  static List<AnimalSpot> _assignIndices(List<String> names) => [
+        for (var i = 0; i < names.length; i++)
+          AnimalSpot(index: i, name: names[i]),
+      ];
 
   static List<AnimalSpot> forSize(SugorokuBoardSize size) =>
       size == SugorokuBoardSize.short10 ? all10 : all20;

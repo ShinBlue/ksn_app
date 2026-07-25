@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../analytics_service.dart';
 import '../sound_service.dart';
 import 'sugoroku_animal_board_view.dart';
+import 'sugoroku_animals.dart';
 import 'sugoroku_board_layout.dart';
 import 'sugoroku_board_view.dart';
 import 'sugoroku_boards.dart';
@@ -102,6 +103,7 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
   // ゲーム進行
   List<SugorokuPiece> _pieces = [];
   HiddenNumberBoardState? _hiddenState;
+  List<AnimalSpot>? _animalSpots10;
   final _skipNextTurn = <int>{};
   int _activePlayerIndex = 0;
   int? _diceValue;
@@ -249,6 +251,9 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
       _winnerId = null;
       _skipNextTurn.clear();
       _reshuffleHiddenNumbers();
+      _animalSpots10 = widget.size == SugorokuBoardSize.short10
+          ? SugorokuAnimals.randomAll10(_random)
+          : null;
       _message = '${_activePiece.name}のばんです';
     });
   }
@@ -445,6 +450,9 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
         piece.position = 0;
       }
       _reshuffleHiddenNumbers();
+      _animalSpots10 = widget.size == SugorokuBoardSize.short10
+          ? SugorokuAnimals.randomAll10(_random)
+          : null;
       _message = '${_activePiece.name}のばんです';
     });
   }
@@ -496,6 +504,7 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
             activePlayerIndex: _activePlayerIndex,
             mode: _mode,
             hiddenState: _hiddenState,
+            animalSpots10: _animalSpots10,
             awaitingAnimalPick: _awaitingAnimalPick,
             canTapAdvance: _canTapToAdvance,
             onAnimalSelected: _onAnimalSelected,
@@ -1325,6 +1334,7 @@ class _BoardArea extends StatelessWidget {
   final int activePlayerIndex;
   final SugorokuPlayMode mode;
   final HiddenNumberBoardState? hiddenState;
+  final List<AnimalSpot>? animalSpots10;
   final bool awaitingAnimalPick;
   final bool canTapAdvance;
   final ValueChanged<AnimalSpot> onAnimalSelected;
@@ -1338,6 +1348,7 @@ class _BoardArea extends StatelessWidget {
     required this.activePlayerIndex,
     required this.mode,
     required this.hiddenState,
+    required this.animalSpots10,
     required this.awaitingAnimalPick,
     required this.canTapAdvance,
     required this.onAnimalSelected,
@@ -1390,6 +1401,7 @@ class _BoardArea extends StatelessWidget {
                 size: size,
                 mode: mode,
                 hiddenState: hiddenState,
+                animals: animalSpots10,
                 enabled: awaitingAnimalPick,
                 onAnimalSelected: onAnimalSelected,
               ),

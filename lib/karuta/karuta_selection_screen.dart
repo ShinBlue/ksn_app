@@ -72,7 +72,9 @@ class KarutaSelectionMetrics {
     final scaleH = rowsAreaH /
         (lineCount * baseTileH + (lineCount - 1) * baseLineGap);
     final scaleW = tableWidth / pairedRowW;
-    final scale = min(scaleH, scaleW).clamp(0.5, 1.0);
+    // 上限は「収まる範囲でできるだけ大きく」表示するための保険的な値。
+    // 実際の大きさは scaleH/scaleW（画面に収まる最大値）で決まる。
+    final scale = min(scaleH, scaleW).clamp(0.5, 2.0);
 
     final scaledSingleRowW = singleRowW * scale;
     final scaledPairGap = basePairGap * scale;
@@ -90,8 +92,8 @@ class KarutaSelectionMetrics {
       secondaryColumnOffset: scaledSingleRowW + scaledPairGap,
       tileGap: baseTileGap * scale,
       rowInnerGap: baseGap * scale,
-      charFontSize: (tileHeight * 0.44).clamp(14.0, 18.0),
-      rowLabelFontSize: uiFontSize,
+      charFontSize: (tileHeight * 0.44).clamp(14.0, 32.0),
+      rowLabelFontSize: (uiFontSize * scale).clamp(uiFontSize, 24.0),
       presetFontSize: 12,
       presetPaddingH: 12,
       presetPaddingV: 8,

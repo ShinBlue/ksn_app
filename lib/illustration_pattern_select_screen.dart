@@ -35,7 +35,7 @@ class IllustrationPatternSelectScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFFFFBFE),
       appBar: AppBar(
-        title: const Text('まるばつゲーム'),
+        title: const Text('OXゲーム(三目並べ）'),
         backgroundColor: const Color(0xFFE3F2FD),
         foregroundColor: const Color(0xFF1565C0),
         leading: IconButton(

@@ -89,7 +89,7 @@ class _GameScreenState extends State<GameScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('まるばつゲーム'),
+        title: const Text('OXゲーム(三目並べ）'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           StatefulBuilder(
