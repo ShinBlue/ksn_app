@@ -7,6 +7,8 @@ import '../sound_service.dart';
 import 'sugoroku_animal_board_view.dart';
 import 'sugoroku_animals.dart';
 import 'sugoroku_board_layout.dart';
+import 'sugoroku_board_list_screen.dart';
+import 'sugoroku_board_store.dart';
 import 'sugoroku_board_view.dart';
 import 'sugoroku_boards.dart';
 import 'sugoroku_heart_number.dart';
@@ -14,11 +16,79 @@ import 'sugoroku_models.dart';
 import 'sugoroku_movement.dart';
 import 'sugoroku_piece_catalog.dart';
 
-class SugorokuSetupScreen extends StatelessWidget {
+class SugorokuSetupScreen extends StatefulWidget {
   const SugorokuSetupScreen({super.key});
 
   @override
+  State<SugorokuSetupScreen> createState() => _SugorokuSetupScreenState();
+}
+
+class _SugorokuSetupScreenState extends State<SugorokuSetupScreen> {
+  final _store = SugorokuBoardStore.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _store.addListener(_onStoreChanged);
+  }
+
+  @override
+  void dispose() {
+    _store.removeListener(_onStoreChanged);
+    super.dispose();
+  }
+
+  void _onStoreChanged() => setState(() {});
+
+  Future<void> _openCreateFlow() async {
+    final size = await showDialog<SugorokuBoardSize>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('なんますにしますか？'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final size in SugorokuBoardSize.values)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(context, size),
+                    child: Text(size.label),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('やめる'),
+          ),
+        ],
+      ),
+    );
+    if (size == null || !mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SugorokuGameSetupScreen(size: size),
+      ),
+    );
+  }
+
+  void _openBoardList() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SugorokuBoardListScreen()),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final savedCount = _store.boards.length;
+
     return Scaffold(
       backgroundColor: const Color(0xFFFFFBFE),
       appBar: AppBar(
@@ -61,6 +131,29 @@ class SugorokuSetupScreen extends StatelessWidget {
                     },
                   ),
                 ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Divider(),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _SetupCard(
+                  title: '盤面を作る',
+                  subtitle: 'マスにことばを入れて、タイトルをつけてほぞんする',
+                  icon: Icons.add_circle_outline,
+                  iconBackgroundColor: const Color(0xFFE3F2FD),
+                  iconColor: const Color(0xFF42A5F5),
+                  onTap: _openCreateFlow,
+                ),
+              ),
+              _SetupCard(
+                title: '保存した盤面を呼び出す',
+                subtitle: '$savedCount / $sugorokuSavedBoardsMax こ ほぞんずみ',
+                icon: Icons.folder_open,
+                iconBackgroundColor: const Color(0xFFE3F2FD),
+                iconColor: const Color(0xFF42A5F5),
+                onTap: _openBoardList,
+              ),
             ],
           ),
         ),
@@ -72,8 +165,13 @@ class SugorokuSetupScreen extends StatelessWidget {
 /// 盤面プレビュー＋左コマ・右進み方・下スタート
 class SugorokuGameSetupScreen extends StatefulWidget {
   final SugorokuBoardSize size;
+  final SugorokuSavedBoard? initialBoard;
 
-  const SugorokuGameSetupScreen({super.key, required this.size});
+  const SugorokuGameSetupScreen({
+    super.key,
+    required this.size,
+    this.initialBoard,
+  });
 
   @override
   State<SugorokuGameSetupScreen> createState() =>
@@ -83,6 +181,7 @@ class SugorokuGameSetupScreen extends StatefulWidget {
 class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
   final _random = Random();
   final _sound = SoundService();
+  final _boardStore = SugorokuBoardStore.instance;
   late List<SugorokuCellDef> _cells;
 
   @override
@@ -91,6 +190,12 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
     _cells = List<SugorokuCellDef>.from(
       SugorokuBoardDefaults.cellsFor(widget.size),
     );
+    final initialBoard = widget.initialBoard;
+    if (initialBoard != null) {
+      for (var i = 0; i < _cells.length && i < initialBoard.labels.length; i++) {
+        _cells[i] = _cells[i].copyWith(label: initialBoard.labels[i]);
+      }
+    }
   }
 
   // セットアップ
@@ -256,6 +361,82 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
           : null;
       _message = '${_activePiece.name}のばんです';
     });
+  }
+
+  Future<void> _saveBoard() async {
+    if (_isPlaying) return;
+
+    if (_boardStore.isFull) {
+      final goToList = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('ほぞんできる盤面は10こまでです'),
+          content: const Text('あたらしくほぞんするには、いらない盤面をさくじょしてください'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('やめる'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('さくじょしにいく'),
+            ),
+          ],
+        ),
+      );
+      if (goToList == true && mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const SugorokuBoardListScreen(),
+          ),
+        );
+      }
+      return;
+    }
+
+    final controller = TextEditingController(
+      text: widget.initialBoard?.title ?? '',
+    );
+    final title = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('盤面のタイトル'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 20,
+          decoration: const InputDecoration(
+            hintText: 'れい：おうちのちかくのばんめん',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('やめる'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('ほぞん'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (title == null || title.isEmpty || !mounted) return;
+
+    final saved = await _boardStore.save(
+      title: title,
+      size: widget.size,
+      labels: _cells.map((c) => c.label).toList(),
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(saved ? 'ほぞんしました' : 'ほぞんできませんでした'),
+      ),
+    );
   }
 
   Future<void> _rollDice() async {
@@ -484,6 +665,7 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
             selectedPieceId: _displaySelectedPieceId,
             canStart: _canStartSetup,
             onStart: _startGame,
+            onSave: _saveBoard,
             onCellTap: _editCellLabel,
             maxHeight: constraints.maxHeight,
             maxWidth: constraints.maxWidth,
@@ -591,7 +773,9 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
   Widget build(BuildContext context) {
     final appBarTitle = _isPlaying
         ? '${widget.size.label} · ${_mode.label}'
-        : widget.size.label;
+        : widget.initialBoard != null
+            ? '${widget.initialBoard!.title} · ${widget.size.label}'
+            : widget.size.label;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFFBFE),
@@ -818,6 +1002,7 @@ class _SetupBoardCenter extends StatelessWidget {
   final int? selectedPieceId;
   final bool canStart;
   final VoidCallback onStart;
+  final VoidCallback onSave;
   final ValueChanged<int> onCellTap;
   final double maxHeight;
   final double maxWidth;
@@ -829,6 +1014,7 @@ class _SetupBoardCenter extends StatelessWidget {
     required this.selectedPieceId,
     required this.canStart,
     required this.onStart,
+    required this.onSave,
     required this.onCellTap,
     required this.maxHeight,
     required this.maxWidth,
@@ -836,7 +1022,7 @@ class _SetupBoardCenter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const setupFooter = 78.0;
+    const setupFooter = 120.0;
 
     final headerHeight = !canStart ? 72.0 : 52.0;
     final boardAreaHeight =
@@ -909,6 +1095,12 @@ class _SetupBoardCenter extends StatelessWidget {
                 style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
               ),
             ],
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: onSave,
+              icon: const Icon(Icons.save_outlined, size: 18),
+              label: const Text('この盤面をほぞんする'),
+            ),
           ],
         );
   }
@@ -1100,11 +1292,17 @@ class _MiniPiecePainter extends CustomPainter {
 class _SetupCard extends StatelessWidget {
   final String title;
   final String subtitle;
+  final IconData icon;
+  final Color iconBackgroundColor;
+  final Color iconColor;
   final VoidCallback onTap;
 
   const _SetupCard({
     required this.title,
     required this.subtitle,
+    this.icon = Icons.casino,
+    this.iconBackgroundColor = const Color(0xFFE8F5E9),
+    this.iconColor = const Color(0xFF66BB6A),
     required this.onTap,
   });
 
@@ -1128,10 +1326,10 @@ class _SetupCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE8F5E9),
+                  color: iconBackgroundColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.casino, color: Color(0xFF66BB6A)),
+                child: Icon(icon, color: iconColor),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -1156,7 +1354,7 @@ class _SetupCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Color(0xFF66BB6A)),
+              Icon(Icons.chevron_right, color: iconColor),
             ],
           ),
         ),

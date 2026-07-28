@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'analytics_service.dart';
 import 'board_content_store.dart';
 import 'main_menu_screen.dart';
+import 'sugoroku/sugoroku_board_store.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await BoardContentStore.instance.load();
+  await SugorokuBoardStore.instance.load();
   await AnalyticsService.instance.init();
   await AnalyticsService.instance.logScreen(AnalyticsRoutes.mainMenu);
   runApp(const MyApp());
