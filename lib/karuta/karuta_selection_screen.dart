@@ -51,6 +51,8 @@ class KarutaSelectionMetrics {
     required double tableHeight,
   }) {
     const lineCount = 11;
+    const countBarHeight = 44.0;
+    const countBarGap = 10.0;
     const presetBlockHeight = 40.0;
     const topGap = 18.0;
     const baseTileW = 40.0;
@@ -67,7 +69,12 @@ class KarutaSelectionMetrics {
 
     final rowsAreaH = max(
       0,
-      tableHeight - presetBlockHeight - topGap - tableBottomPadding,
+      tableHeight -
+          countBarHeight -
+          countBarGap -
+          presetBlockHeight -
+          topGap -
+          tableBottomPadding,
     );
     final scaleH = rowsAreaH /
         (lineCount * baseTileH + (lineCount - 1) * baseLineGap);
@@ -108,11 +115,17 @@ class KarutaSelectionScreen extends StatefulWidget {
   State<KarutaSelectionScreen> createState() => _KarutaSelectionScreenState();
 }
 
+const kKarutaValidCardCounts = [4, 8, 12, 16, 20];
+
 class _KarutaSelectionScreenState extends State<KarutaSelectionScreen> {
   final _selected = <String>{};
-  KarutaLayoutMode _layoutMode = KarutaLayoutMode.scatter;
+  int? _targetCount;
+  KarutaLayoutMode _layoutMode = KarutaLayoutMode.aligned;
   bool _loading = true;
   String? _error;
+
+  bool get _isComplete =>
+      _targetCount != null && _selected.length == _targetCount;
 
   @override
   void initState() {
@@ -124,7 +137,12 @@ class _KarutaSelectionScreenState extends State<KarutaSelectionScreen> {
   Future<void> _loadData() async {
     try {
       await KarutaRepository.instance.load();
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _targetCount == null) _showCountPicker();
+        });
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -135,22 +153,48 @@ class _KarutaSelectionScreenState extends State<KarutaSelectionScreen> {
     }
   }
 
+  Future<void> _showCountPicker() async {
+    final result = await showDialog<int>(
+      context: context,
+      barrierDismissible: _targetCount != null,
+      builder: (context) => _CountPickerDialog(selectedCount: _targetCount),
+    );
+    if (result != null) _selectTargetCount(result);
+  }
+
+  void _selectTargetCount(int count) {
+    setState(() {
+      _targetCount = count;
+      if (_selected.length > count) {
+        final trimmed = _selected.take(count).toList();
+        _selected
+          ..clear()
+          ..addAll(trimmed);
+      }
+    });
+  }
+
   void _toggle(String character) {
+    if (_targetCount == null) return;
     setState(() {
       if (_selected.contains(character)) {
         _selected.remove(character);
-      } else {
+      } else if (_selected.length < _targetCount!) {
         _selected.add(character);
       }
     });
   }
 
   void _togglePreset(Iterable<String> characters) {
+    if (_targetCount == null) return;
     setState(() {
       if (characters.every(_selected.contains)) {
         _selected.removeAll(characters);
       } else {
-        _selected.addAll(characters);
+        for (final character in characters) {
+          if (_selected.length >= _targetCount!) break;
+          _selected.add(character);
+        }
       }
     });
   }
@@ -163,12 +207,16 @@ class _KarutaSelectionScreenState extends State<KarutaSelectionScreen> {
   }
 
   void _toggleRow(KarutaRow row) {
+    if (_targetCount == null) return;
     final allSelected = row.characters.every(_selected.contains);
     setState(() {
       if (allSelected) {
         _selected.removeAll(row.characters);
       } else {
-        _selected.addAll(row.characters);
+        for (final character in row.characters) {
+          if (_selected.length >= _targetCount!) break;
+          _selected.add(character);
+        }
       }
     });
   }
@@ -180,7 +228,7 @@ class _KarutaSelectionScreenState extends State<KarutaSelectionScreen> {
       row.characters.any(_selected.contains) && !_isRowFullySelected(row);
 
   void _startGame() {
-    if (_selected.isEmpty) return;
+    if (!_isComplete) return;
     AnalyticsService.instance.logEvent(
       'karuta_start',
       params: {
@@ -239,75 +287,112 @@ class _KarutaSelectionScreenState extends State<KarutaSelectionScreen> {
                             child: Column(
                               children: [
                                 Center(
-                                  child: _PresetBar(
+                                  child: _CountStatusChip(
                                     metrics: metrics,
-                                    isAiueoSelected: _isPresetSelected(
-                                      karutaAiueoCharacters,
+                                    selectedCount: _targetCount,
+                                    onTap: _showCountPicker,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Opacity(
+                                  opacity: _targetCount == null ? 0.35 : 1,
+                                  child: IgnorePointer(
+                                    ignoring: _targetCount == null,
+                                    child: Center(
+                                      child: _PresetBar(
+                                        metrics: metrics,
+                                        isAiueoSelected: _isPresetSelected(
+                                          karutaAiueoCharacters,
+                                        ),
+                                        isSeionSelected: _isPresetSelected(
+                                          karutaSeionCharacters,
+                                        ),
+                                        isDakutenSelected: _isPresetSelected(
+                                          karutaDakutenCharacters,
+                                        ),
+                                        isVoicedSelected: _isPresetSelected(
+                                          karutaVoicedCharacters,
+                                        ),
+                                        isAllSelected: _isPresetSelected(
+                                          karutaAllCharacters,
+                                        ),
+                                        onToggleAiueo: () => _togglePreset(
+                                          karutaAiueoCharacters,
+                                        ),
+                                        onToggleSeion: () => _togglePreset(
+                                          karutaSeionCharacters,
+                                        ),
+                                        onToggleDakuten: () => _togglePreset(
+                                          karutaDakutenCharacters,
+                                        ),
+                                        onToggleVoiced: () => _togglePreset(
+                                          karutaVoicedCharacters,
+                                        ),
+                                        onToggleAll: () => _togglePreset(
+                                          karutaAllCharacters,
+                                        ),
+                                        onClear: _clearAll,
+                                      ),
                                     ),
-                                    isSeionSelected: _isPresetSelected(
-                                      karutaSeionCharacters,
-                                    ),
-                                    isDakutenSelected: _isPresetSelected(
-                                      karutaDakutenCharacters,
-                                    ),
-                                    isVoicedSelected: _isPresetSelected(
-                                      karutaVoicedCharacters,
-                                    ),
-                                    isAllSelected: _isPresetSelected(
-                                      karutaAllCharacters,
-                                    ),
-                                    onToggleAiueo: () => _togglePreset(
-                                      karutaAiueoCharacters,
-                                    ),
-                                    onToggleSeion: () => _togglePreset(
-                                      karutaSeionCharacters,
-                                    ),
-                                    onToggleDakuten: () => _togglePreset(
-                                      karutaDakutenCharacters,
-                                    ),
-                                    onToggleVoiced: () => _togglePreset(
-                                      karutaVoicedCharacters,
-                                    ),
-                                    onToggleAll: () => _togglePreset(
-                                      karutaAllCharacters,
-                                    ),
-                                    onClear: _clearAll,
                                   ),
                                 ),
                                 const SizedBox(height: 18),
                                 Expanded(
-                                  child: Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom:
-                                            KarutaSelectionMetrics
-                                                .tableBottomPadding,
-                                      ),
-                                      child: SizedBox(
-                                        width: metrics.pairedRowWidth,
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            for (final line
-                                                in karutaDisplayLines)
-                                              _KarutaDisplayLineSection(
-                                                line: line,
-                                                metrics: metrics,
-                                                selected: _selected,
-                                                isRowFullySelected:
-                                                    _isRowFullySelected,
-                                                isRowPartiallySelected:
-                                                    _isRowPartiallySelected,
-                                                onToggleRow: _toggleRow,
-                                                onToggleChar: _toggle,
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Opacity(
+                                        opacity:
+                                            _targetCount == null ? 0.35 : 1,
+                                        child: IgnorePointer(
+                                          ignoring: _targetCount == null,
+                                          child: Center(
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(
+                                                bottom: KarutaSelectionMetrics
+                                                    .tableBottomPadding,
                                               ),
-                                          ],
+                                              child: SizedBox(
+                                                width: metrics.pairedRowWidth,
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  children: [
+                                                    for (final line
+                                                        in karutaDisplayLines)
+                                                      _KarutaDisplayLineSection(
+                                                        line: line,
+                                                        metrics: metrics,
+                                                        selected: _selected,
+                                                        isRowFullySelected:
+                                                            _isRowFullySelected,
+                                                        isRowPartiallySelected:
+                                                            _isRowPartiallySelected,
+                                                        onToggleRow:
+                                                            _toggleRow,
+                                                        onToggleChar: _toggle,
+                                                      ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                    ),
+                                      if (_targetCount == null)
+                                        Text(
+                                          'まず あそぶ まいすうを\nえらんでね',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey.shade500,
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
                               ],
@@ -318,6 +403,7 @@ class _KarutaSelectionScreenState extends State<KarutaSelectionScreen> {
                             width: sidePanelWidth,
                             child: _SelectionSidePanel(
                               selectedCount: _selected.length,
+                              targetCount: _targetCount,
                               layoutMode: _layoutMode,
                               onLayoutModeChanged: (mode) =>
                                   setState(() => _layoutMode = mode),
@@ -329,6 +415,157 @@ class _KarutaSelectionScreenState extends State<KarutaSelectionScreen> {
                     );
                   },
                 ),
+    );
+  }
+}
+
+class _CountStatusChip extends StatelessWidget {
+  final KarutaSelectionMetrics metrics;
+  final int? selectedCount;
+  final VoidCallback onTap;
+
+  const _CountStatusChip({
+    required this.metrics,
+    required this.selectedCount,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFFFE0B2),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: metrics.presetPaddingH,
+            vertical: metrics.presetPaddingV,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFFFB74D)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                selectedCount == null
+                    ? 'まいすうを えらぶ'
+                    : '$selectedCountまい あそぶ',
+                style: TextStyle(
+                  fontSize: metrics.presetFontSize,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFE65100),
+                ),
+              ),
+              const SizedBox(width: 4),
+              const Icon(
+                Icons.edit,
+                size: 14,
+                color: Color(0xFFE65100),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CountPickerDialog extends StatelessWidget {
+  final int? selectedCount;
+
+  const _CountPickerDialog({required this.selectedCount});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'なんまい あそぶ？',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              alignment: WrapAlignment.center,
+              children: [
+                for (final count in kKarutaValidCardCounts)
+                  _CountPickerOption(
+                    count: count,
+                    selected: selectedCount == count,
+                    onTap: () => Navigator.pop(context, count),
+                  ),
+              ],
+            ),
+            if (selectedCount != null) ...[
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('とじる'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CountPickerOption extends StatelessWidget {
+  final int count;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _CountPickerOption({
+    required this.count,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? const Color(0xFFE8F5E9) : const Color(0xFFFFE0B2),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Container(
+          width: 76,
+          height: 76,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected
+                  ? const Color(0xFF43A047)
+                  : const Color(0xFFFFB74D),
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: Text(
+            '$countまい',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: selected
+                  ? const Color(0xFF2E7D32)
+                  : const Color(0xFFE65100),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -783,12 +1020,14 @@ class _CharTile extends StatelessWidget {
 
 class _SelectionSidePanel extends StatelessWidget {
   final int selectedCount;
+  final int? targetCount;
   final KarutaLayoutMode layoutMode;
   final ValueChanged<KarutaLayoutMode> onLayoutModeChanged;
   final VoidCallback onStart;
 
   const _SelectionSidePanel({
     required this.selectedCount,
+    required this.targetCount,
     required this.layoutMode,
     required this.onLayoutModeChanged,
     required this.onStart,
@@ -796,6 +1035,16 @@ class _SelectionSidePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final target = targetCount;
+    final isComplete = target != null && selectedCount == target;
+    final headerText =
+        target == null ? 'まいすうを\nえらんでね' : '$selectedCount / $targetこ';
+    final hintText = target == null
+        ? ''
+        : isComplete
+            ? 'あそべます！'
+            : 'あと${target - selectedCount}まい えらんでね';
+
     return Column(
       children: [
         Row(
@@ -815,13 +1064,31 @@ class _SelectionSidePanel extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '$selectedCountこ えらび',
+                        headerText,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: KarutaSelectionMetrics.uiFontSize,
                           fontWeight: FontWeight.bold,
+                          color: isComplete
+                              ? const Color(0xFF2E7D32)
+                              : Colors.grey.shade800,
                         ),
                       ),
+                      if (hintText.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          hintText,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            height: 1.3,
+                            color: isComplete
+                                ? const Color(0xFF43A047)
+                                : const Color(0xFFE65100),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 10),
                       Text(
                         'ならべかた',
@@ -833,18 +1100,13 @@ class _SelectionSidePanel extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 6),
-                      for (final mode in KarutaLayoutMode.values) ...[
-                        _LayoutModeOption(
-                          mode: mode,
-                          selected: layoutMode == mode,
-                          onTap: () => onLayoutModeChanged(mode),
-                        ),
-                        if (mode != KarutaLayoutMode.values.last)
-                          const SizedBox(height: 6),
-                      ],
+                      _LayoutModeToggle(
+                        layoutMode: layoutMode,
+                        onChanged: onLayoutModeChanged,
+                      ),
                       const SizedBox(height: 8),
                       FilledButton(
-                        onPressed: selectedCount > 0 ? onStart : null,
+                        onPressed: isComplete ? onStart : null,
                         style: FilledButton.styleFrom(
                           backgroundColor: const Color(0xFFFFB74D),
                           disabledBackgroundColor: Colors.grey.shade300,
@@ -876,69 +1138,52 @@ class _SelectionSidePanel extends StatelessWidget {
   }
 }
 
-class _LayoutModeOption extends StatelessWidget {
-  final KarutaLayoutMode mode;
-  final bool selected;
-  final VoidCallback onTap;
+class _LayoutModeToggle extends StatelessWidget {
+  final KarutaLayoutMode layoutMode;
+  final ValueChanged<KarutaLayoutMode> onChanged;
 
-  const _LayoutModeOption({
-    required this.mode,
-    required this.selected,
-    required this.onTap,
+  const _LayoutModeToggle({
+    required this.layoutMode,
+    required this.onChanged,
   });
-
-  IconData get _icon => switch (mode) {
-        KarutaLayoutMode.aligned => Icons.grid_view,
-        KarutaLayoutMode.scatter => Icons.shuffle,
-      };
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: selected ? const Color(0xFFE8F5E9) : Colors.white,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            vertical: 8,
-            horizontal: 8,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: selected
-                  ? const Color(0xFF43A047)
-                  : Colors.grey.shade300,
-              width: selected ? 2 : 1,
+    final isScatter = layoutMode == KarutaLayoutMode.scatter;
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            KarutaLayoutMode.aligned.label,
+            style: TextStyle(
+              fontSize: KarutaSelectionMetrics.uiFontSize,
+              fontWeight: isScatter ? FontWeight.w500 : FontWeight.bold,
+              color:
+                  isScatter ? Colors.grey.shade600 : const Color(0xFF2E7D32),
             ),
           ),
-          child: Row(
-            children: [
-              Icon(
-                _icon,
-                size: 16,
-                color: selected
-                    ? const Color(0xFF43A047)
-                    : Colors.grey.shade600,
+          Transform.scale(
+            scale: 0.75,
+            child: Switch(
+              value: isScatter,
+              onChanged: (value) => onChanged(
+                value ? KarutaLayoutMode.scatter : KarutaLayoutMode.aligned,
               ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  mode.label,
-                  style: TextStyle(
-                    fontSize: KarutaSelectionMetrics.uiFontSize,
-                    fontWeight:
-                        selected ? FontWeight.bold : FontWeight.w500,
-                  ),
-                ),
-              ),
-              if (selected)
-                const Icon(Icons.check, size: 14, color: Color(0xFF43A047)),
-            ],
+              activeThumbColor: const Color(0xFF43A047),
+            ),
           ),
-        ),
+          Text(
+            KarutaLayoutMode.scatter.label,
+            style: TextStyle(
+              fontSize: KarutaSelectionMetrics.uiFontSize,
+              fontWeight: isScatter ? FontWeight.bold : FontWeight.w500,
+              color:
+                  isScatter ? const Color(0xFF2E7D32) : Colors.grey.shade600,
+            ),
+          ),
+        ],
       ),
     );
   }

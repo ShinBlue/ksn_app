@@ -143,15 +143,16 @@ class _KarutaGameScreenState extends State<KarutaGameScreen> {
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      for (final placed in placements)
+                      for (var i = 0; i < placements.length; i++)
                         Positioned(
-                          left: placed.x,
-                          top: placed.y,
-                          width: placed.width,
-                          height: placed.height,
+                          left: placements[i].x,
+                          top: placements[i].y,
+                          width: placements[i].width,
+                          height: placements[i].height,
                           child: _KarutaCardTile(
-                            card: placed.card,
-                            onTap: () => _showCardDetail(placed.card),
+                            card: placements[i].card,
+                            number: i + 1,
+                            onTap: () => _showCardDetail(placements[i].card),
                           ),
                         ),
                     ],
@@ -165,10 +166,12 @@ class _KarutaGameScreenState extends State<KarutaGameScreen> {
 
 class _KarutaCardTile extends StatelessWidget {
   final KarutaCard card;
+  final int number;
   final VoidCallback onTap;
 
   const _KarutaCardTile({
     required this.card,
+    required this.number,
     required this.onTap,
   });
 
@@ -180,30 +183,70 @@ class _KarutaCardTile extends StatelessWidget {
       elevation: 2,
       shadowColor: Colors.black26,
       clipBehavior: Clip.none,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: ColoredBox(
-            color: Colors.white,
-            child: Image.asset(
-              card.imagePath,
-              fit: BoxFit.contain,
-              width: double.infinity,
-              height: double.infinity,
-              alignment: Alignment.center,
-              errorBuilder: (_, _, _) => Center(
-                child: Text(
-                  card.character,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: onTap,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: ColoredBox(
+                color: Colors.white,
+                child: Image.asset(
+                  card.imagePath,
+                  fit: BoxFit.contain,
+                  width: double.infinity,
+                  height: double.infinity,
+                  alignment: Alignment.center,
+                  errorBuilder: (_, _, _) => Center(
+                    child: Text(
+                      card.character,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
+          Positioned(
+            right: 2,
+            top: 2,
+            child: IgnorePointer(
+              child: _CardNumberBadge(number: number),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CardNumberBadge extends StatelessWidget {
+  final int number;
+
+  const _CardNumberBadge({required this.number});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        '$number',
+        style: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+          height: 1,
         ),
       ),
     );
