@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'analytics_service.dart';
-import 'home_screen.dart';
-import 'karuta/karuta_selection_screen.dart';
-import 'sugoroku/sugoroku_screens.dart';
+import 'app_routes.dart';
 
 class MainMenuScreen extends StatelessWidget {
   const MainMenuScreen({super.key});
@@ -74,35 +72,17 @@ class MainMenuScreen extends StatelessWidget {
 
   void _openMaruBatsu(BuildContext context) {
     AnalyticsService.instance.logMainMenuSelect('maru_batsu');
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        settings: const RouteSettings(name: AnalyticsRoutes.boardSelect),
-        builder: (_) => const HomeScreen(),
-      ),
-    );
+    Navigator.pushNamed(context, AppRoutes.maruBatsu);
   }
 
   void _openSugoroku(BuildContext context) {
     AnalyticsService.instance.logMainMenuSelect('sugoroku');
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        settings: const RouteSettings(name: '/sugoroku/select'),
-        builder: (_) => const SugorokuBoardSelectScreen(),
-      ),
-    );
+    Navigator.pushNamed(context, AppRoutes.sugoroku);
   }
 
   void _openKaruta(BuildContext context) {
     AnalyticsService.instance.logMainMenuSelect('karuta');
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        settings: const RouteSettings(name: '/karuta/select'),
-        builder: (_) => const KarutaSelectionScreen(),
-      ),
-    );
+    Navigator.pushNamed(context, AppRoutes.karuta);
   }
 
   void _showComingSoon(BuildContext context, String name) {

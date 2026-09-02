@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ことばサポートネット練習アプリ</title>
+  <script>
+    // GitHub Pages 用。/ksn_app/sugoroku などをアプリ本体へ戻す。
+    // Firebase Hosting では rewrites があるため、このファイルは使われない。
+    (function () {
+      var path = location.pathname + location.search + location.hash;
+      try {
+        sessionStorage.setItem('ksn_spa_redirect', path);
+      } catch (e) {}
+      var parts = location.pathname.split('/').filter(Boolean);
+      var base = parts.length > 0 ? '/' + parts[0] + '/' : '/';
+      location.replace(base);
+    })();
+  </script>
+</head>
+<body></body>
+</html>

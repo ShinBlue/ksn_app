@@ -31,6 +31,19 @@
 
   <title>ことばサポートネット練習アプリ</title>
   <link rel="manifest" href="manifest.json">
+  <script>
+    // GitHub Pages では未知のパスが 404.html 経由になる。
+    // 元のパスを戻してから Flutter のルーティングに渡す。
+    (function () {
+      try {
+        var redirect = sessionStorage.getItem('ksn_spa_redirect');
+        if (redirect) {
+          sessionStorage.removeItem('ksn_spa_redirect');
+          history.replaceState(null, '', redirect);
+        }
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <!--
