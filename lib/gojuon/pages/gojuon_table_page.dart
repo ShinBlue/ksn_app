@@ -481,15 +481,6 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
                                   topRight: Radius.circular(16),
                                 ),
                               ),
-                              child: const Center(
-                                child: Text(
-                                  'ことば表示アプリ',
-                                  style: TextStyle(
-                                    fontSize: 21.33,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
                             ),
                             // ベースのContainer
                             Container(

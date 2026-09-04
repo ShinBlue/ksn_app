@@ -369,7 +369,7 @@ class _GameButtonList extends StatelessWidget {
           SizedBox(height: spacing),
           _GameButton(
             label: 'ことば表示アプリ',
-            icon: Icons.grid_view,
+            icon: Icons.abc,
             color: const Color(0xFF9575CD),
             compact: compact,
             onTap: onGojuon,
