@@ -9,6 +9,7 @@ void main() {
     expect(AppRoutes.normalize('/maru_batsu'), AppRoutes.maruBatsu);
     expect(AppRoutes.normalize('/sugoroku/'), AppRoutes.sugoroku);
     expect(AppRoutes.normalize('/karuta'), AppRoutes.karuta);
+    expect(AppRoutes.normalize('/gojuon'), AppRoutes.gojuon);
     expect(AppRoutes.normalize('/unknown'), AppRoutes.home);
   });
 
@@ -22,6 +23,23 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('練習アプリ'), findsOneWidget);
     expect(find.text('すごろく'), findsOneWidget);
+    expect(find.text('ことば表示アプリ'), findsOneWidget);
+  });
+
+  testWidgets('gojuon named route opens the 50-on table', (tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        routes: AppRoutes.table,
+        initialRoute: AppRoutes.gojuon,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('ことば表示アプリ'), findsWidgets);
   });
 
   testWidgets('sugoroku named route opens the game screen', (tester) async {

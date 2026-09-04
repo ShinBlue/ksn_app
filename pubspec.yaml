@@ -63,6 +63,7 @@ flutter:
 
   assets:
     - assets/images/ksn_logo.png
+    - assets/images/gojuon_logo.png
     - assets/images/盤面/
     - assets/images/カルタデータ/
     - assets/images/動物/
@@ -74,6 +75,7 @@ flutter:
     - assets/sounds/win.wav
     - assets/sounds/draw.wav
     - assets/data/karuta_sentences.csv
+    - assets/data/gojuon_words.csv
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

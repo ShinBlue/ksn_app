@@ -27,6 +27,7 @@ class MainMenuScreen extends StatelessWidget {
                       onMaruBatsu: () => _openMaruBatsu(context),
                       onSugoroku: () => _openSugoroku(context),
                       onKaruta: () => _openKaruta(context),
+                      onGojuon: () => _openGojuon(context),
                       onComingSoon: (name) => _showComingSoon(context, name),
                     ),
                   ),
@@ -50,6 +51,7 @@ class MainMenuScreen extends StatelessWidget {
                             onMaruBatsu: () => _openMaruBatsu(context),
                             onSugoroku: () => _openSugoroku(context),
                             onKaruta: () => _openKaruta(context),
+                            onGojuon: () => _openGojuon(context),
                             onComingSoon: (name) => _showComingSoon(context, name),
                           )
                         : _PortraitMenu(
@@ -58,6 +60,7 @@ class MainMenuScreen extends StatelessWidget {
                             onMaruBatsu: () => _openMaruBatsu(context),
                             onSugoroku: () => _openSugoroku(context),
                             onKaruta: () => _openKaruta(context),
+                            onGojuon: () => _openGojuon(context),
                             onComingSoon: (name) => _showComingSoon(context, name),
                           ),
                   ),
@@ -83,6 +86,11 @@ class MainMenuScreen extends StatelessWidget {
   void _openKaruta(BuildContext context) {
     AnalyticsService.instance.logMainMenuSelect('karuta');
     Navigator.pushNamed(context, AppRoutes.karuta);
+  }
+
+  void _openGojuon(BuildContext context) {
+    AnalyticsService.instance.logMainMenuSelect('gojuon');
+    Navigator.pushNamed(context, AppRoutes.gojuon);
   }
 
   void _showComingSoon(BuildContext context, String name) {
@@ -113,6 +121,7 @@ class _DesktopMenu extends StatelessWidget {
   final VoidCallback onMaruBatsu;
   final VoidCallback onSugoroku;
   final VoidCallback onKaruta;
+  final VoidCallback onGojuon;
   final void Function(String name) onComingSoon;
 
   const _DesktopMenu({
@@ -120,6 +129,7 @@ class _DesktopMenu extends StatelessWidget {
     required this.onMaruBatsu,
     required this.onSugoroku,
     required this.onKaruta,
+    required this.onGojuon,
     required this.onComingSoon,
   });
 
@@ -129,26 +139,29 @@ class _DesktopMenu extends StatelessWidget {
     final titleSize = (width * 0.055).clamp(16.0, 24.0);
     final subtitleSize = (width * 0.045).clamp(14.0, 20.0);
 
-    return Column(
-      children: [
-        SizedBox(height: width * 0.07),
-        _MenuHeader(
-          logoSize: logoSize,
-          titleSize: titleSize,
-          subtitleSize: subtitleSize,
-        ),
-        SizedBox(height: width * 0.1),
-        _GameButtonList(
-          compact: false,
-          onMaruBatsu: onMaruBatsu,
-          onSugoroku: onSugoroku,
-          onKaruta: onKaruta,
-          onComingSoon: onComingSoon,
-          spacing: 20,
-        ),
-        const Spacer(),
-        const _Footer(),
-      ],
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          SizedBox(height: width * 0.07),
+          _MenuHeader(
+            logoSize: logoSize,
+            titleSize: titleSize,
+            subtitleSize: subtitleSize,
+          ),
+          SizedBox(height: width * 0.1),
+          _GameButtonList(
+            compact: false,
+            onMaruBatsu: onMaruBatsu,
+            onSugoroku: onSugoroku,
+            onKaruta: onKaruta,
+            onGojuon: onGojuon,
+            onComingSoon: onComingSoon,
+            spacing: 20,
+          ),
+          const SizedBox(height: 24),
+          const _Footer(),
+        ],
+      ),
     );
   }
 }
@@ -159,6 +172,7 @@ class _PortraitMenu extends StatelessWidget {
   final VoidCallback onMaruBatsu;
   final VoidCallback onSugoroku;
   final VoidCallback onKaruta;
+  final VoidCallback onGojuon;
   final void Function(String name) onComingSoon;
 
   const _PortraitMenu({
@@ -167,6 +181,7 @@ class _PortraitMenu extends StatelessWidget {
     required this.onMaruBatsu,
     required this.onSugoroku,
     required this.onKaruta,
+    required this.onGojuon,
     required this.onComingSoon,
   });
 
@@ -195,6 +210,7 @@ class _PortraitMenu extends StatelessWidget {
           onMaruBatsu: onMaruBatsu,
           onSugoroku: onSugoroku,
           onKaruta: onKaruta,
+          onGojuon: onGojuon,
           onComingSoon: onComingSoon,
           spacing: buttonSpacing,
         ),
@@ -210,6 +226,7 @@ class _LandscapeMenu extends StatelessWidget {
   final VoidCallback onMaruBatsu;
   final VoidCallback onSugoroku;
   final VoidCallback onKaruta;
+  final VoidCallback onGojuon;
   final void Function(String name) onComingSoon;
 
   const _LandscapeMenu({
@@ -217,6 +234,7 @@ class _LandscapeMenu extends StatelessWidget {
     required this.onMaruBatsu,
     required this.onSugoroku,
     required this.onKaruta,
+    required this.onGojuon,
     required this.onComingSoon,
   });
 
@@ -238,13 +256,16 @@ class _LandscapeMenu extends StatelessWidget {
         const SizedBox(width: 16),
         Expanded(
           flex: 5,
-          child: _GameButtonList(
-            compact: true,
-            onMaruBatsu: onMaruBatsu,
-            onSugoroku: onSugoroku,
-            onKaruta: onKaruta,
-            onComingSoon: onComingSoon,
-            spacing: 10,
+          child: SingleChildScrollView(
+            child: _GameButtonList(
+              compact: true,
+              onMaruBatsu: onMaruBatsu,
+              onSugoroku: onSugoroku,
+              onKaruta: onKaruta,
+              onGojuon: onGojuon,
+              onComingSoon: onComingSoon,
+              spacing: 10,
+            ),
           ),
         ),
       ],
@@ -301,6 +322,7 @@ class _GameButtonList extends StatelessWidget {
   final VoidCallback onMaruBatsu;
   final VoidCallback onSugoroku;
   final VoidCallback onKaruta;
+  final VoidCallback onGojuon;
   final void Function(String name) onComingSoon;
   final double spacing;
 
@@ -309,6 +331,7 @@ class _GameButtonList extends StatelessWidget {
     required this.onMaruBatsu,
     required this.onSugoroku,
     required this.onKaruta,
+    required this.onGojuon,
     required this.onComingSoon,
     required this.spacing,
   });
@@ -342,6 +365,14 @@ class _GameButtonList extends StatelessWidget {
             color: const Color(0xFFFFB74D),
             compact: compact,
             onTap: onKaruta,
+          ),
+          SizedBox(height: spacing),
+          _GameButton(
+            label: 'ことば表示アプリ',
+            icon: Icons.grid_view,
+            color: const Color(0xFF9575CD),
+            compact: compact,
+            onTap: onGojuon,
           ),
         ],
       ),
