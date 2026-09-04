@@ -9,6 +9,8 @@ class WordDisplayPage extends StatefulWidget {
   final bool includeShortText;
   final String displayFormat;
   final bool enableKanaColor;
+  final bool enableBlueFrame;
+  final bool enableRedDoubleCircle;
 
   const WordDisplayPage({
     super.key,
@@ -18,6 +20,8 @@ class WordDisplayPage extends StatefulWidget {
     required this.includeShortText,
     required this.displayFormat,
     required this.enableKanaColor,
+    this.enableBlueFrame = true,
+    this.enableRedDoubleCircle = true,
   });
 
   @override
@@ -27,6 +31,8 @@ class WordDisplayPage extends StatefulWidget {
 class _WordDisplayPageState extends State<WordDisplayPage> {
   int currentIndex = 0;
   List<String> displayItems = [];
+  final Set<int> _framed = {};
+  final Set<int> _circled = {};
 
   @override
   void initState() {
@@ -83,6 +89,26 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
     });
   }
 
+  void _toggleFrame(int index) {
+    setState(() {
+      if (_framed.contains(index)) {
+        _framed.remove(index);
+      } else {
+        _framed.add(index);
+      }
+    });
+  }
+
+  void _toggleCircle(int index) {
+    setState(() {
+      if (_circled.contains(index)) {
+        _circled.remove(index);
+      } else {
+        _circled.add(index);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (displayItems.isEmpty) {
@@ -103,13 +129,17 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
   Widget _buildListView() {
     return Center(
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: displayItems.length,
         itemBuilder: (context, index) {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Center(
-              child: _buildHighlightedText(displayItems[index], fontSize: 24),
+              child: _buildMarkedItem(
+                index: index,
+                text: displayItems[index],
+                fontSize: 24,
+              ),
             ),
           );
         },
@@ -122,8 +152,9 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _buildHighlightedText(
-            displayItems[currentIndex],
+          _buildMarkedItem(
+            index: currentIndex,
+            text: displayItems[currentIndex],
             fontSize: 48,
             fontWeight: FontWeight.bold,
           ),
@@ -159,6 +190,69 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMarkedItem({
+    required int index,
+    required String text,
+    required double fontSize,
+    FontWeight? fontWeight,
+  }) {
+    final framed = widget.enableBlueFrame && _framed.contains(index);
+    final circled = widget.enableRedDoubleCircle && _circled.contains(index);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          key: Key('word-left-$index'),
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.enableBlueFrame ? () => _toggleFrame(index) : null,
+          child: SizedBox(
+            width: 56,
+            height: fontSize * 1.8,
+          ),
+        ),
+        GestureDetector(
+          key: Key('word-text-$index'),
+          onTap: widget.enableRedDoubleCircle
+              ? () => _toggleCircle(index)
+              : null,
+          child: Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                key: framed ? Key('word-blue-frame-$index') : null,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: framed ? Colors.blue : Colors.transparent,
+                    width: 3,
+                  ),
+                ),
+                child: _buildHighlightedText(
+                  text,
+                  fontSize: fontSize,
+                  fontWeight: fontWeight,
+                ),
+              ),
+              if (circled)
+                IgnorePointer(
+                  child: CustomPaint(
+                    key: Key('word-double-circle-$index'),
+                    size: Size.square(fontSize * 1.55),
+                    painter: _RedDoubleCirclePainter(),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -249,4 +343,22 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
 
     return Text.rich(TextSpan(children: spans), textAlign: TextAlign.center);
   }
+}
+
+class _RedDoubleCirclePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.red
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = (size.shortestSide * 0.08).clamp(2.5, 5.0)
+      ..strokeCap = StrokeCap.round;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    canvas.drawCircle(center, size.shortestSide * 0.46, paint);
+    canvas.drawCircle(center, size.shortestSide * 0.30, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

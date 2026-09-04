@@ -32,6 +32,12 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
   // 選択音カラーのON/OFF状態
   bool enableKanaColor = true;
 
+  // 表示した語の左をクリックして青い枠を付ける
+  bool enableBlueFrame = true;
+
+  // 表示した語をクリックして赤い二重丸を付ける
+  bool enableRedDoubleCircle = true;
+
   // CSVデータを格納するリスト
   List<WordData> wordDataList = [];
 
@@ -440,34 +446,27 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
         backgroundColor: const Color(0xFFEDE7F6),
       ),
       body: SafeArea(
-        child: Stack(
-          children: [
-            Align(
-              alignment: Alignment.topCenter,
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.only(
-                    left: 16,
-                    right: 16,
-                    top: 8,
-                    bottom: 16,
-                  ),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      // あ段のすべてのセル（空セルを含む）の幅を計算
-                      final firstRow = kanaGrid[0];
-                      final totalCellCount = firstRow.length;
+        child: LayoutBuilder(
+          builder: (context, viewport) {
+            final isLandscape = viewport.maxWidth > viewport.maxHeight;
+            final firstRow = kanaGrid[0];
+            final totalCellCount = firstRow.length;
+            final layoutInfo = LayoutCalculator.calculateLayout(
+              context,
+              totalCellCount,
+              availableWidth: viewport.maxWidth - 32,
+              availableHeight: viewport.maxHeight - 24,
+              scaleFloor: isLandscape ? 0.2 : LayoutCalculator.minScale,
+            );
 
-                      // レイアウト計算を一括で実行
-                      final layoutInfo = LayoutCalculator.calculateLayout(
-                        context,
-                        totalCellCount,
-                      );
-
-                      return Transform.scale(
-                        scale: layoutInfo.scale,
-                        alignment: Alignment.topCenter,
-                        child: Column(
+            final table = Padding(
+              padding: const EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 8,
+                bottom: 16,
+              ),
+              child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             // ベースのContainerの上に配置するContainer
@@ -886,16 +885,25 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
                               decoration: const BoxDecoration(
                                 color: Color(0xFFFFE4CC),
                               ),
-                              child: Stack(
-                                children: [
-                                  // 左側のコンテンツ（表示対象、表示形式）
-                                  Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Row(
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  10,
+                                  16,
+                                  8,
+                                ),
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.topLeft,
+                                  child: SizedBox(
+                                    width: layoutInfo.containerWidth - 32,
+                                    child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Row(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        // 表示対象を選ぶチェックボックス
                                         Flexible(
                                           flex: 2,
                                           child: Column(
@@ -969,14 +977,13 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
                                                             ],
                                                           )
                                                           .toList()
-                                                         ..removeLast(), // 最後の余分なSizedBoxを削除
+                                                         ..removeLast(),
                                                 ),
                                               ),
                                             ],
                                           ),
                                         ),
                                         const SizedBox(width: 16),
-                                        // 表示形式を選ぶラジオボタン
                                         Flexible(
                                           flex: 1,
                                           child: Column(
@@ -1052,164 +1059,99 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
                                             ],
                                           ),
                                         ),
+                                        const SizedBox(width: 12),
+                                        SizedBox(
+                                          width: 120,
+                                          height: 50,
+                                          child: FilledButton(
+                                            onPressed: _openWordDisplay,
+                                            style: FilledButton.styleFrom(
+                                              backgroundColor: Colors.blue,
+                                              foregroundColor: Colors.white,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                            child: const Text(
+                                              '表示',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
                                       ],
                                     ),
-                                  ),
-                                  // 選択音カラーを「ちゃ」「ちゅ」「ちょ」のx座標より右に配置
-                                  Positioned(
-                                    left:
-                                        layoutInfo.leftPadding +
-                                        (10 *
-                                            (LayoutCalculator.cellWidth +
-                                                LayoutCalculator.spacing)) +
-                                        100, // さらに右に100px移動
-                                    top: 16,
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 28,
+                                      runSpacing: 4,
                                       children: [
-                                        const Text(
-                                          '選択音カラー',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                        _OptionSwitch(
+                                          label: '選択音カラー',
+                                          value: enableKanaColor,
+                                          onChanged: (value) {
+                                            setState(() {
+                                              enableKanaColor = value;
+                                            });
+                                          },
                                         ),
-                                        const SizedBox(height: 8),
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const SizedBox(
-                                              width: 24,
-                                            ), // スイッチを右に移動
-                                            SizedBox(
-                                              width: 24,
-                                              height: 24,
-                                              child: Switch(
-                                                value: enableKanaColor,
-                                                onChanged: (value) {
-                                                  setState(() {
-                                                    enableKanaColor = value;
-                                                  });
-                                                },
-                                              ),
-                                            ),
-                                            const SizedBox(
-                                              width: 16,
-                                            ), // ON/OFFテキストを右に移動
-                                            Text(
-                                              enableKanaColor ? 'ON' : 'OFF',
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ],
+                                        _OptionSwitch(
+                                          label: '青い枠',
+                                          value: enableBlueFrame,
+                                          onChanged: (value) {
+                                            setState(() {
+                                              enableBlueFrame = value;
+                                            });
+                                          },
+                                        ),
+                                        _OptionSwitch(
+                                          label: '赤い二重丸',
+                                          value: enableRedDoubleCircle,
+                                          onChanged: (value) {
+                                            setState(() {
+                                              enableRedDoubleCircle = value;
+                                            });
+                                          },
                                         ),
                                       ],
                                     ),
+                                  ],
+                                ),
                                   ),
-                                  // 表示ボタンを右端に配置
-                                  Positioned(
-                                    right: 16,
-                                    top: 16,
-                                    child: SizedBox(
-                                      width: 120,
-                                      height: 50,
-                                      child: FilledButton(
-                                        onPressed: () {
-                                          // 選択された音を取得
-                                          final selectedKanas = kanaToggles
-                                              .entries
-                                              .where(
-                                                (entry) => entry.value == true,
-                                              )
-                                              .map((entry) => entry.key)
-                                              .toList();
-
-                                          // 選択されたレベルを取得（全角数字を半角数字に変換）
-                                          final selectedLevels = <String>[];
-                                          if (displayTargets['レベル１'] == true) {
-                                            selectedLevels.add('レベル1');
-                                          }
-                                          if (displayTargets['レベル２'] == true) {
-                                            selectedLevels.add('レベル2');
-                                          }
-                                          if (displayTargets['レベル３'] == true) {
-                                            selectedLevels.add('レベル3');
-                                          }
-
-                                          // 短文を含むか
-                                          final includeShortText =
-                                              displayTargets['短文'] == true;
-
-                                          // 選択がない場合は何もしない
-                                          if (selectedKanas.isEmpty ||
-                                              (selectedLevels.isEmpty &&
-                                                  !includeShortText)) {
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                  '音または表示対象を選択してください',
-                                                ),
-                                              ),
-                                            );
-                                            return;
-                                          }
-
-                                          // 新しいページに遷移
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  WordDisplayPage(
-                                                    wordDataList: wordDataList,
-                                                    selectedKanas:
-                                                        selectedKanas,
-                                                    selectedLevels:
-                                                        selectedLevels,
-                                                    includeShortText:
-                                                        includeShortText,
-                                                    displayFormat:
-                                                        displayFormat,
-                                                    enableKanaColor:
-                                                        enableKanaColor,
-                                                  ),
-                                            ),
-                                          );
-                                        },
-                                        style: FilledButton.styleFrom(
-                                          backgroundColor: Colors.blue,
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          '表示',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      );
-                    },
-                  ),
+            );
+
+            final Widget bodyContent = isLandscape
+                ? SizedBox(
+                    width: viewport.maxWidth,
+                    height: viewport.maxHeight,
+                    child: FittedBox(
+                      fit: BoxFit.contain,
+                      alignment: Alignment.topCenter,
+                      child: table,
+                    ),
+                  )
+                : SingleChildScrollView(
+                    child: Transform.scale(
+                      scale: layoutInfo.scale,
+                      alignment: Alignment.topCenter,
+                      child: table,
+                    ),
+                  );
+
+            return Stack(
+              children: [
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: bodyContent,
                 ),
-              ),
-            ),
             // 画面の左上にlogo.pngを配置
             Positioned(
               top: 0,
@@ -1223,7 +1165,9 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
                 ),
               ),
             ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );
@@ -1237,5 +1181,88 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
   // テーマに応じたテキストカラーの取得ヘルパー
   Color _getThemeTextColor(int columnIndex, bool isActive) {
     return _getKanaTextColor(columnIndex, isActive, context);
+  }
+
+  void _openWordDisplay() {
+    final selectedKanas = kanaToggles.entries
+        .where((entry) => entry.value == true)
+        .map((entry) => entry.key)
+        .toList();
+
+    final selectedLevels = <String>[];
+    if (displayTargets['レベル１'] == true) {
+      selectedLevels.add('レベル1');
+    }
+    if (displayTargets['レベル２'] == true) {
+      selectedLevels.add('レベル2');
+    }
+    if (displayTargets['レベル３'] == true) {
+      selectedLevels.add('レベル3');
+    }
+
+    final includeShortText = displayTargets['短文'] == true;
+
+    if (selectedKanas.isEmpty ||
+        (selectedLevels.isEmpty && !includeShortText)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('音または表示対象を選択してください')),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WordDisplayPage(
+          wordDataList: wordDataList,
+          selectedKanas: selectedKanas,
+          selectedLevels: selectedLevels,
+          includeShortText: includeShortText,
+          displayFormat: displayFormat,
+          enableKanaColor: enableKanaColor,
+          enableBlueFrame: enableBlueFrame,
+          enableRedDoubleCircle: enableRedDoubleCircle,
+        ),
+      ),
+    );
+  }
+}
+
+class _OptionSwitch extends StatelessWidget {
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _OptionSwitch({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+        ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Transform.scale(
+              scale: 0.85,
+              child: Switch(value: value, onChanged: onChanged),
+            ),
+            Text(
+              value ? 'ON' : 'OFF',
+              style: const TextStyle(fontSize: 13),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 }

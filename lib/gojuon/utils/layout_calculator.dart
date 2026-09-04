@@ -18,7 +18,7 @@ class LayoutCalculator {
   static const double containerPadding = 32.0; // top 16 + bottom 16
   static const double containerSpacing = 16.0;
   static const double topContainerHeightRatio = 10.0;
-  static const double bottomContainerHeightRatio = 1.44;
+  static const double bottomContainerHeightRatio = 2.55;
   static const double minScale = 0.5;
   static const double maxScale = 1.0;
   static const double screenPadding = 32.0; // 左右のパディング
@@ -85,30 +85,37 @@ class LayoutCalculator {
     double availableWidth,
     double availableHeight,
     double containerWidth,
-    double estimatedTotalHeight,
-  ) {
+    double estimatedTotalHeight, {
+    double scaleFloor = minScale,
+  }) {
     final widthScale = availableWidth / containerWidth;
     final heightScale = availableHeight / estimatedTotalHeight;
     final scale = widthScale < heightScale ? widthScale : heightScale;
     // スケールが1.0を超える場合は拡大しない（scaleDown）
-    // 最小スケールを0.5に設定（小さすぎる場合はスクロール）
-    return (scale > maxScale ? maxScale : scale).clamp(minScale, maxScale);
+    return (scale > maxScale ? maxScale : scale).clamp(scaleFloor, maxScale);
   }
 
   // すべてのレイアウト情報を一度に計算
-  static LayoutInfo calculateLayout(BuildContext context, int totalCellCount) {
+  static LayoutInfo calculateLayout(
+    BuildContext context,
+    int totalCellCount, {
+    double? availableWidth,
+    double? availableHeight,
+    double scaleFloor = minScale,
+  }) {
     final mediaQuery = MediaQuery.of(context);
     final screenWidth = mediaQuery.size.width;
     final screenHeight = mediaQuery.size.height;
     final topPadding = mediaQuery.padding.top;
     final bottomPadding = mediaQuery.padding.bottom;
 
-    final availableWidth = calculateAvailableWidth(screenWidth);
-    final availableHeight = calculateAvailableHeight(
-      screenHeight,
-      topPadding,
-      bottomPadding,
-    );
+    final width = availableWidth ?? calculateAvailableWidth(screenWidth);
+    final height = availableHeight ??
+        calculateAvailableHeight(
+          screenHeight,
+          topPadding,
+          bottomPadding,
+        );
 
     final contentWidth = calculateContentWidth(totalCellCount);
     final containerWidth = calculateContainerWidth(contentWidth);
@@ -119,15 +126,16 @@ class LayoutCalculator {
       estimatedBaseHeight,
     );
     final scale = calculateScale(
-      availableWidth,
-      availableHeight,
+      width,
+      height,
       containerWidth,
       estimatedTotalHeight,
+      scaleFloor: scaleFloor,
     );
 
     return LayoutInfo(
-      availableWidth: availableWidth,
-      availableHeight: availableHeight,
+      availableWidth: width,
+      availableHeight: height,
       contentWidth: contentWidth,
       containerWidth: containerWidth,
       estimatedBaseHeight: estimatedBaseHeight,
