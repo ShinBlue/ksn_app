@@ -44,6 +44,9 @@ void main() {
     expect(find.text('青い枠'), findsOneWidget);
     expect(find.text('赤い二重丸'), findsOneWidget);
     expect(find.text('ランダムに並べる'), findsOneWidget);
+    expect(find.text('除外する音'), findsOneWidget);
+    expect(find.byKey(const Key('exclude-sounds-field')), findsOneWidget);
+    expect(find.text('決定'), findsOneWidget);
   });
 
   testWidgets('gojuon settings does not use vertical scroll in landscape', (
@@ -165,5 +168,59 @@ void main() {
         findsOneWidget,
       );
     }
+  });
+
+  testWidgets('excluded sounds drop matching words and short sentences', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WordDisplayPage(
+          wordDataList: [
+            WordData(type: '単語', kana: 'あ', number: 1, level1: 'あか'),
+            WordData(type: '単語', kana: 'あ', number: 2, level1: 'あめ'),
+            WordData(type: '短文', kana: 'あ', number: 1, level1: 'ドアを あける'),
+          ],
+          selectedKanas: const ['あ'],
+          selectedLevels: const ['レベル1'],
+          includeShortText: true,
+          displayFormat: 'リスト',
+          enableKanaColor: false,
+          excludedSounds: const ['か', 'け'],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('あめ'), findsOneWidget);
+    expect(find.text('あか'), findsNothing);
+    expect(find.text('ドアを あける'), findsNothing);
+  });
+
+  testWidgets('confirm keeps only meaningful excluded sounds', (tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(routes: AppRoutes.table, initialRoute: AppRoutes.gojuon),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const Key('exclude-sounds-field')),
+      'きabcく、！きゃ',
+    );
+    await tester.tap(find.byKey(const Key('exclude-sounds-confirm')));
+    await tester.pump();
+
+    expect(
+      tester
+          .widget<TextField>(find.byKey(const Key('exclude-sounds-field')))
+          .controller
+          ?.text,
+      'き く きゃ',
+    );
   });
 }

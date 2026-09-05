@@ -74,8 +74,7 @@ class LayoutCalculator {
     double topContainerHeight,
     double estimatedBaseHeight,
   ) {
-    return topContainerHeight +
-        estimatedBaseHeight +
+    return estimatedBaseHeight +
         containerSpacing + // ベースと下側のContainerの間隔
         (topContainerHeight * bottomContainerHeightRatio); // 下側のContainerの高さ
   }

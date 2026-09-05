@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import '../excluded_sounds.dart';
 import '../models/word_data.dart';
 
 // 単語表示ページ
@@ -14,6 +15,7 @@ class WordDisplayPage extends StatefulWidget {
   final bool enableBlueFrame;
   final bool enableRedDoubleCircle;
   final bool enableRandomOrder;
+  final List<String> excludedSounds;
   final Random? random;
 
   const WordDisplayPage({
@@ -27,6 +29,7 @@ class WordDisplayPage extends StatefulWidget {
     this.enableBlueFrame = true,
     this.enableRedDoubleCircle = true,
     this.enableRandomOrder = false,
+    this.excludedSounds = const [],
     this.random,
   });
 
@@ -60,7 +63,7 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
         if (widget.includeShortText) {
           // 短文の場合はレベル1の列に入っているデータを表示
           if (wordData.level1 != null && wordData.level1!.isNotEmpty) {
-            items.add(wordData.level1!);
+            _addIfAllowed(items, wordData.level1!);
           }
         }
         continue;
@@ -71,19 +74,19 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
         // 選択されたレベル1がある場合、レベル1列のデータを追加
         if (widget.selectedLevels.contains('レベル1')) {
           if (wordData.level1 != null && wordData.level1!.isNotEmpty) {
-            items.add(wordData.level1!);
+            _addIfAllowed(items, wordData.level1!);
           }
         }
         // 選択されたレベル2がある場合、レベル2列のデータを追加
         if (widget.selectedLevels.contains('レベル2')) {
           if (wordData.level2 != null && wordData.level2!.isNotEmpty) {
-            items.add(wordData.level2!);
+            _addIfAllowed(items, wordData.level2!);
           }
         }
         // 選択されたレベル3がある場合、レベル3列のデータを追加
         if (widget.selectedLevels.contains('レベル3')) {
           if (wordData.level3 != null && wordData.level3!.isNotEmpty) {
-            items.add(wordData.level3!);
+            _addIfAllowed(items, wordData.level3!);
           }
         }
       }
@@ -97,6 +100,13 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
       displayItems = items;
       currentIndex = 0;
     });
+  }
+
+  void _addIfAllowed(List<String> items, String text) {
+    if (ExcludedSounds.containsAny(text, widget.excludedSounds)) {
+      return;
+    }
+    items.add(text);
   }
 
   void _toggleFrame(int index) {
