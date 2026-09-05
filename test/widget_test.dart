@@ -73,6 +73,23 @@ void main() {
     );
   });
 
+  testWidgets('game entry screens show a back button', (tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        routes: AppRoutes.table,
+        initialRoute: AppRoutes.gojuon,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(BackButtonIcon), findsOneWidget);
+    expect(find.text('練習アプリ'), findsNothing);
+  });
+
   testWidgets('sugoroku named route opens the game screen', (tester) async {
     await tester.pumpWidget(
       MaterialApp(

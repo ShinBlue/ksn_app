@@ -5,6 +5,7 @@ import 'board_defaults.dart';
 import 'board_edit_screen.dart';
 import 'board_preview.dart';
 import 'board_type.dart';
+import 'exit_to_kyozai.dart';
 import 'game_screen.dart';
 import 'illustration_pattern_select_screen.dart';
 import 'text_pattern_select_screen.dart';
@@ -84,74 +85,77 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('OXゲーム(三目並べ）'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  '盤面を選んでください',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '色・数字盤面は鉛筆アイコンから編集できます',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-                ),
-                const SizedBox(height: 32),
-                _BoardCard(
-                  number: '1',
-                  label: BoardType.color.label,
-                  preview: BoardPreview(
-                    boardType: BoardType.color,
-                    colors: _store.colors(),
+    return ExitToKyozaiScope(
+      child: Scaffold(
+        appBar: AppBar(
+          leading: const ExitToKyozaiButton(),
+          title: const Text('OXゲーム(三目並べ）'),
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        ),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    '盤面を選んでください',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
-                  onEdit: () => _openEdit(BoardType.color),
-                  onPlay: () => _startGame(BoardType.color),
-                ),
-                const SizedBox(height: 16),
-                _BoardCard(
-                  number: '2',
-                  label: BoardType.number.label,
-                  preview: BoardPreview(
-                    boardType: BoardType.number,
-                    labels: _store.labels(BoardType.number),
+                  const SizedBox(height: 8),
+                  Text(
+                    '色・数字盤面は鉛筆アイコンから編集できます',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
                   ),
-                  onEdit: () => _openEdit(BoardType.number),
-                  onPlay: () => _startGame(BoardType.number),
-                ),
-                const SizedBox(height: 16),
-                _BoardCard(
-                  number: '3',
-                  label: BoardType.text.label,
-                  preview: BoardPreview(
-                    boardType: BoardType.text,
-                    labels: _store.labels(BoardType.text),
+                  const SizedBox(height: 32),
+                  _BoardCard(
+                    number: '1',
+                    label: BoardType.color.label,
+                    preview: BoardPreview(
+                      boardType: BoardType.color,
+                      colors: _store.colors(),
+                    ),
+                    onEdit: () => _openEdit(BoardType.color),
+                    onPlay: () => _startGame(BoardType.color),
                   ),
-                  onPlay: () => _startGame(BoardType.text),
-                ),
-                const SizedBox(height: 16),
-                _BoardCard(
-                  number: '4',
-                  label: BoardType.illustration.label,
-                  preview: BoardPreview(
-                    boardType: BoardType.illustration,
-                    images: _store.illustrationImages(),
-                    illustrationPattern: _store.illustrationPattern,
+                  const SizedBox(height: 16),
+                  _BoardCard(
+                    number: '2',
+                    label: BoardType.number.label,
+                    preview: BoardPreview(
+                      boardType: BoardType.number,
+                      labels: _store.labels(BoardType.number),
+                    ),
+                    onEdit: () => _openEdit(BoardType.number),
+                    onPlay: () => _startGame(BoardType.number),
                   ),
-                  onPlay: () => _startGame(BoardType.illustration),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  _BoardCard(
+                    number: '3',
+                    label: BoardType.text.label,
+                    preview: BoardPreview(
+                      boardType: BoardType.text,
+                      labels: _store.labels(BoardType.text),
+                    ),
+                    onPlay: () => _startGame(BoardType.text),
+                  ),
+                  const SizedBox(height: 16),
+                  _BoardCard(
+                    number: '4',
+                    label: BoardType.illustration.label,
+                    preview: BoardPreview(
+                      boardType: BoardType.illustration,
+                      images: _store.illustrationImages(),
+                      illustrationPattern: _store.illustrationPattern,
+                    ),
+                    onPlay: () => _startGame(BoardType.illustration),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -197,7 +201,10 @@ class _BoardCard extends StatelessWidget {
                 onTap: onPlay,
                 child: Text(
                   '$number. $label',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),

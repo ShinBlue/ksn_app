@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../analytics_service.dart';
+import '../exit_to_kyozai.dart';
 import '../sound_service.dart';
 import 'sugoroku_animal_board_view.dart';
 import 'sugoroku_animals.dart';
@@ -72,9 +73,7 @@ class _SugorokuSetupScreenState extends State<SugorokuSetupScreen> {
     if (size == null || !mounted) return;
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => SugorokuGameSetupScreen(size: size),
-      ),
+      MaterialPageRoute(builder: (_) => SugorokuGameSetupScreen(size: size)),
     );
   }
 
@@ -89,72 +88,75 @@ class _SugorokuSetupScreenState extends State<SugorokuSetupScreen> {
   Widget build(BuildContext context) {
     final savedCount = _store.boards.length;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFFBFE),
-      appBar: AppBar(
-        title: const Text('すごろく'),
-        backgroundColor: const Color(0xFFE8F5E9),
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              const Text(
-                'ばんめんのながさをえらんでください',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'ますはバラバラにおかれて、やじるしでつながります',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-              ),
-              const SizedBox(height: 16),
-              for (final size in SugorokuBoardSize.values)
+    return ExitToKyozaiScope(
+      child: Scaffold(
+        backgroundColor: const Color(0xFFFFFBFE),
+        appBar: AppBar(
+          leading: const ExitToKyozaiButton(),
+          title: const Text('すごろく'),
+          backgroundColor: const Color(0xFFE8F5E9),
+        ),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                const Text(
+                  'ばんめんのながさをえらんでください',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'ますはバラバラにおかれて、やじるしでつながります',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 16),
+                for (final size in SugorokuBoardSize.values)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _SetupCard(
+                      title: size.label,
+                      subtitle: size == SugorokuBoardSize.short10
+                          ? '10ます · コンパクト'
+                          : '20ます · どうぶついっぱい',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SugorokuGameSetupScreen(size: size),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Divider(),
+                ),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: _SetupCard(
-                    title: size.label,
-                    subtitle: size == SugorokuBoardSize.short10
-                        ? '10ます · コンパクト'
-                        : '20ます · どうぶついっぱい',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => SugorokuGameSetupScreen(size: size),
-                        ),
-                      );
-                    },
+                    title: '盤面を作る',
+                    subtitle: 'マスにことばを入れて、タイトルをつけてほぞんする',
+                    icon: Icons.add_circle_outline,
+                    iconBackgroundColor: const Color(0xFFE3F2FD),
+                    iconColor: const Color(0xFF42A5F5),
+                    onTap: _openCreateFlow,
                   ),
                 ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: Divider(),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _SetupCard(
-                  title: '盤面を作る',
-                  subtitle: 'マスにことばを入れて、タイトルをつけてほぞんする',
-                  icon: Icons.add_circle_outline,
+                _SetupCard(
+                  title: '保存した盤面を呼び出す',
+                  subtitle: '$savedCount / $sugorokuSavedBoardsMax こ ほぞんずみ',
+                  icon: Icons.folder_open,
                   iconBackgroundColor: const Color(0xFFE3F2FD),
                   iconColor: const Color(0xFF42A5F5),
-                  onTap: _openCreateFlow,
+                  onTap: _openBoardList,
                 ),
-              ),
-              _SetupCard(
-                title: '保存した盤面を呼び出す',
-                subtitle: '$savedCount / $sugorokuSavedBoardsMax こ ほぞんずみ',
-                icon: Icons.folder_open,
-                iconBackgroundColor: const Color(0xFFE3F2FD),
-                iconColor: const Color(0xFF42A5F5),
-                onTap: _openBoardList,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -192,7 +194,11 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
     );
     final initialBoard = widget.initialBoard;
     if (initialBoard != null) {
-      for (var i = 0; i < _cells.length && i < initialBoard.labels.length; i++) {
+      for (
+        var i = 0;
+        i < _cells.length && i < initialBoard.labels.length;
+        i++
+      ) {
         _cells[i] = _cells[i].copyWith(label: initialBoard.labels[i]);
       }
     }
@@ -227,9 +233,9 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
       _assigningPlayer == 0 ? _player0CandidateId : _player1CandidateId;
 
   Set<String> get _usedIds => {
-        if (_player0CandidateId != null) _player0CandidateId!,
-        if (_player1CandidateId != null) _player1CandidateId!,
-      };
+    if (_player0CandidateId != null) _player0CandidateId!,
+    if (_player1CandidateId != null) _player1CandidateId!,
+  };
 
   bool get _canStartSetup =>
       _selectedMode != null &&
@@ -294,8 +300,7 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
 
     final cell = _cells[index];
     final controller = TextEditingController(text: cell.label);
-    final defaultCell =
-        SugorokuBoardDefaults.defaultCellAt(widget.size, index);
+    final defaultCell = SugorokuBoardDefaults.defaultCellAt(widget.size, index);
 
     final saved = await showDialog<bool>(
       context: context,
@@ -340,10 +345,12 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
 
   void _startGame() {
     if (!_canStartSetup || _isPlaying) return;
-    final c0 = SugorokuPieceCatalog.candidates
-        .firstWhere((c) => c.id == _player0CandidateId);
-    final c1 = SugorokuPieceCatalog.candidates
-        .firstWhere((c) => c.id == _player1CandidateId);
+    final c0 = SugorokuPieceCatalog.candidates.firstWhere(
+      (c) => c.id == _player0CandidateId,
+    );
+    final c1 = SugorokuPieceCatalog.candidates.firstWhere(
+      (c) => c.id == _player1CandidateId,
+    );
 
     setState(() {
       _isPlaying = true;
@@ -387,9 +394,7 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
       if (goToList == true && mounted) {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => const SugorokuBoardListScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => const SugorokuBoardListScreen()),
         );
       }
       return;
@@ -432,11 +437,9 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
       labels: _cells.map((c) => c.label).toList(),
     );
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(saved ? 'ほぞんしました' : 'ほぞんできませんでした'),
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(saved ? 'ほぞんしました' : 'ほぞんできませんでした')));
   }
 
   Future<void> _rollDice() async {
@@ -504,8 +507,7 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
     setState(() {
       _awaitingAnimalPick = false;
       _remainingSteps = animal.stepCount;
-      _message =
-          '${animal.name}（${animal.stepCount}ます）。がめんをタップしてすすめてください';
+      _message = '${animal.name}（${animal.stepCount}ます）。がめんをタップしてすすめてください';
     });
   }
 
@@ -774,8 +776,8 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
     final appBarTitle = _isPlaying
         ? '${widget.size.label} · ${_mode.label}'
         : widget.initialBoard != null
-            ? '${widget.initialBoard!.title} · ${widget.size.label}'
-            : widget.size.label;
+        ? '${widget.initialBoard!.title} · ${widget.size.label}'
+        : widget.size.label;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFFBFE),
@@ -784,10 +786,7 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
         backgroundColor: const Color(0xFFE8F5E9),
         actions: [
           if (_isPlaying && _isGameOver)
-            TextButton(
-              onPressed: _resetGame,
-              child: const Text('もういちど'),
-            ),
+            TextButton(onPressed: _resetGame, child: const Text('もういちど')),
           if (_isPlaying)
             StatefulBuilder(
               builder: (context, setIconState) => IconButton(
@@ -859,13 +858,9 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: SingleChildScrollView(child: leftPanel),
-                    ),
+                    Expanded(child: SingleChildScrollView(child: leftPanel)),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: SingleChildScrollView(child: rightPanel),
-                    ),
+                    Expanded(child: SingleChildScrollView(child: rightPanel)),
                   ],
                 ),
               ],
@@ -881,10 +876,7 @@ class _ModeSelectPanel extends StatelessWidget {
   final SugorokuPlayMode? selectedMode;
   final ValueChanged<SugorokuPlayMode> onSelect;
 
-  const _ModeSelectPanel({
-    required this.selectedMode,
-    required this.onSelect,
-  });
+  const _ModeSelectPanel({required this.selectedMode, required this.onSelect});
 
   @override
   Widget build(BuildContext context) {
@@ -973,7 +965,8 @@ class _PieceSelectPanel extends StatelessWidget {
               child: _PieceOptionButton(
                 candidate: candidate,
                 selected: candidate.id == currentSelection,
-                disabled: usedIds.contains(candidate.id) &&
+                disabled:
+                    usedIds.contains(candidate.id) &&
                     candidate.id != currentSelection,
                 onTap: () => onSelect(candidate),
               ),
@@ -1025,84 +1018,87 @@ class _SetupBoardCenter extends StatelessWidget {
     const setupFooter = 120.0;
 
     final headerHeight = !canStart ? 72.0 : 52.0;
-    final boardAreaHeight =
-        (maxHeight - headerHeight - setupFooter).clamp(1.0, double.infinity);
+    final boardAreaHeight = (maxHeight - headerHeight - setupFooter).clamp(
+      1.0,
+      double.infinity,
+    );
     final boardWidth = SugorokuBoardLayout.boardWidthFitting(
       size: size,
       maxWidth: maxWidth,
       maxHeight: boardAreaHeight,
     );
-        final boardFrame = boardWidth + SugorokuBoardLayout.framedPadding;
-        final boardHeight = SugorokuBoardLayout.boardHeightForWidth(size, boardWidth) +
-            SugorokuBoardLayout.framedPadding;
+    final boardFrame = boardWidth + SugorokuBoardLayout.framedPadding;
+    final boardHeight =
+        SugorokuBoardLayout.boardHeightForWidth(size, boardWidth) +
+        SugorokuBoardLayout.framedPadding;
 
-        return Column(
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            Text(
-              'ますをタップしてことばをいれられます',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'やじるしのじゅんにすすみます',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
+    return Column(
+      mainAxisSize: MainAxisSize.max,
+      children: [
+        Text(
+          'ますをタップしてことばをいれられます',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'やじるしのじゅんにすすみます',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: boardFrame,
+          height: boardAreaHeight.isFinite ? boardAreaHeight : boardHeight,
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(
               width: boardFrame,
-              height: boardAreaHeight.isFinite ? boardAreaHeight : boardHeight,
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: SizedBox(
-                  width: boardFrame,
-                  height: boardHeight,
-                  child: SugorokuProgressBoardView(
-                    size: size,
-                    cells: cells,
-                    pieces: pieces,
-                    selectedPieceId: selectedPieceId,
-                    compact: true,
-                    editable: true,
-                    onCellTap: onCellTap,
-                  ),
-                ),
+              height: boardHeight,
+              child: SugorokuProgressBoardView(
+                size: size,
+                cells: cells,
+                pieces: pieces,
+                selectedPieceId: selectedPieceId,
+                compact: true,
+                editable: true,
+                onCellTap: onCellTap,
               ),
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: boardFrame * 0.7,
-              child: FilledButton.icon(
-                onPressed: canStart ? onStart : null,
-                icon: const Icon(Icons.play_arrow),
-                label: const Text(
-                  'スタート',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  backgroundColor: const Color(0xFF43A047),
-                ),
-              ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: boardFrame * 0.7,
+          child: FilledButton.icon(
+            onPressed: canStart ? onStart : null,
+            icon: const Icon(Icons.play_arrow),
+            label: const Text(
+              'スタート',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            if (!canStart) ...[
-              const SizedBox(height: 6),
-              Text(
-                'コマとすすみかたをえらぶとスタートできます',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-              ),
-            ],
-            const SizedBox(height: 8),
-            TextButton.icon(
-              onPressed: onSave,
-              icon: const Icon(Icons.save_outlined, size: 18),
-              label: const Text('この盤面をほぞんする'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              backgroundColor: const Color(0xFF43A047),
             ),
-          ],
-        );
+          ),
+        ),
+        if (!canStart) ...[
+          const SizedBox(height: 6),
+          Text(
+            'コマとすすみかたをえらぶとスタートできます',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+          ),
+        ],
+        const SizedBox(height: 8),
+        TextButton.icon(
+          onPressed: onSave,
+          icon: const Icon(Icons.save_outlined, size: 18),
+          label: const Text('この盤面をほぞんする'),
+        ),
+      ],
+    );
   }
 }
 
@@ -1148,8 +1144,9 @@ class _SideOptionButton extends StatelessWidget {
                       title,
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight:
-                            selected ? FontWeight.bold : FontWeight.w600,
+                        fontWeight: selected
+                            ? FontWeight.bold
+                            : FontWeight.w600,
                       ),
                     ),
                   ),
@@ -1219,8 +1216,9 @@ class _PieceOptionButton extends StatelessWidget {
                     candidate.name,
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight:
-                          selected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: selected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
                 ),
@@ -1419,7 +1417,11 @@ class _GamePieceStatusPanel extends StatelessWidget {
                     ),
                   ),
                   if (piece.id == activePlayerIndex)
-                    const Icon(Icons.play_arrow, size: 16, color: Colors.orange),
+                    const Icon(
+                      Icons.play_arrow,
+                      size: 16,
+                      color: Colors.orange,
+                    ),
                 ],
               ),
             ),
@@ -1570,7 +1572,8 @@ class _BoardArea extends StatelessWidget {
         secondaryAspectRatio: secondaryAspect,
       );
       final boardFrame = boardWidth + SugorokuBoardLayout.framedPadding;
-      final boardHeight = SugorokuBoardLayout.boardHeightForWidth(size, boardWidth) +
+      final boardHeight =
+          SugorokuBoardLayout.boardHeightForWidth(size, boardWidth) +
           SugorokuBoardLayout.framedPadding;
       final animalHeight = boardWidth / secondaryAspect;
 
@@ -1630,10 +1633,7 @@ class _BoardArea extends StatelessWidget {
         child: Container(
           width: double.infinity,
           margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.symmetric(
-            vertical: 6,
-            horizontal: 12,
-          ),
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
           decoration: BoxDecoration(
             color: const Color(0xFFFFF176),
             borderRadius: BorderRadius.circular(8),
@@ -1680,7 +1680,8 @@ class _ProgressBoardOnly extends StatelessWidget {
       overheadTop: bannerHeight,
     );
     final boardFrame = boardWidth + SugorokuBoardLayout.framedPadding;
-    final boardHeight = SugorokuBoardLayout.boardHeightForWidth(size, boardWidth) +
+    final boardHeight =
+        SugorokuBoardLayout.boardHeightForWidth(size, boardWidth) +
         SugorokuBoardLayout.framedPadding;
 
     return SizedBox(
@@ -1735,62 +1736,62 @@ class _ModeControls extends StatelessWidget {
 
     return switch (mode) {
       SugorokuPlayMode.dice => Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(
-              height: diceSize + 8,
-              child: diceValue != null
-                  ? Center(
-                      child: SugorokuDiceFace(value: diceValue!, size: diceSize),
-                    )
-                  : const SizedBox.shrink(),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            height: diceSize + 8,
+            child: diceValue != null
+                ? Center(
+                    child: SugorokuDiceFace(value: diceValue!, size: diceSize),
+                  )
+                : const SizedBox.shrink(),
+          ),
+          FilledButton.icon(
+            onPressed: canPrepareMove && !rolling ? onRollDice : null,
+            icon: Icon(Icons.casino, size: compact ? 18 : 24),
+            label: Text(
+              rolling ? 'ふっています…' : 'サイコロ',
+              style: TextStyle(fontSize: compact ? 13 : 14),
             ),
-            FilledButton.icon(
-              onPressed: canPrepareMove && !rolling ? onRollDice : null,
-              icon: Icon(Icons.casino, size: compact ? 18 : 24),
-              label: Text(
-                rolling ? 'ふっています…' : 'サイコロ',
-                style: TextStyle(fontSize: compact ? 13 : 14),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
+      ),
       SugorokuPlayMode.janken => Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (final hand in ['グー', 'チョキ', 'パー'])
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: FilledButton(
-                  onPressed: canPrepareMove && !rolling
-                      ? () => onJanken(hand)
-                      : null,
-                  child: Text(hand, style: TextStyle(fontSize: compact ? 13 : 14)),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final hand in ['グー', 'チョキ', 'パー'])
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: FilledButton(
+                onPressed: canPrepareMove && !rolling
+                    ? () => onJanken(hand)
+                    : null,
+                child: Text(
+                  hand,
+                  style: TextStyle(fontSize: compact ? 13 : 14),
                 ),
               ),
-          ],
+            ),
+        ],
+      ),
+      SugorokuPlayMode.animalPick ||
+      SugorokuPlayMode.hiddenNumber => FilledButton.icon(
+        onPressed: canPrepareMove && !rolling && !awaitingAnimalPick
+            ? onPrepareAnimalPick
+            : null,
+        icon: Icon(
+          mode == SugorokuPlayMode.hiddenNumber ? Icons.filter_1 : Icons.pets,
+          size: compact ? 18 : 24,
         ),
-      SugorokuPlayMode.animalPick || SugorokuPlayMode.hiddenNumber =>
-        FilledButton.icon(
-          onPressed:
-              canPrepareMove && !rolling && !awaitingAnimalPick
-                  ? onPrepareAnimalPick
-                  : null,
-          icon: Icon(
-            mode == SugorokuPlayMode.hiddenNumber
-                ? Icons.filter_1
-                : Icons.pets,
-            size: compact ? 18 : 24,
-          ),
-          label: Text(
-            awaitingAnimalPick
-                ? 'どうぶつをえらんで'
-                : mode == SugorokuPlayMode.hiddenNumber
-                    ? 'すうじあて'
-                    : 'どうぶつをえらぶ',
-            style: TextStyle(fontSize: compact ? 13 : 14),
-          ),
+        label: Text(
+          awaitingAnimalPick
+              ? 'どうぶつをえらんで'
+              : mode == SugorokuPlayMode.hiddenNumber
+              ? 'すうじあて'
+              : 'どうぶつをえらぶ',
+          style: TextStyle(fontSize: compact ? 13 : 14),
         ),
+      ),
     };
   }
 }
