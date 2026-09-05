@@ -215,12 +215,16 @@ void main() {
     await tester.tap(find.byKey(const Key('exclude-sounds-confirm')));
     await tester.pump();
 
-    expect(
-      tester
-          .widget<TextField>(find.byKey(const Key('exclude-sounds-field')))
-          .controller
-          ?.text,
-      'き く きゃ',
-    );
+    final field = find.byKey(const Key('exclude-sounds-field'));
+    var textField = tester.widget<TextField>(field);
+    expect(textField.controller?.text, 'き く きゃ');
+    expect(textField.style?.fontWeight, FontWeight.bold);
+
+    await tester.tap(field);
+    await tester.pump();
+
+    textField = tester.widget<TextField>(field);
+    expect(textField.controller?.text, isEmpty);
+    expect(textField.style?.fontWeight, FontWeight.normal);
   });
 }

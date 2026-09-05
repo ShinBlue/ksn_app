@@ -45,6 +45,8 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
 
   // 入っていたら困る音（設定画面の入力枠）
   final _excludeController = TextEditingController();
+  final _excludeFocus = FocusNode();
+  var _excludeConfirmed = false;
 
   // CSVデータを格納するリスト
   List<WordData> wordDataList = [];
@@ -59,6 +61,7 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
   @override
   void dispose() {
     _excludeController.dispose();
+    _excludeFocus.dispose();
     super.dispose();
   }
 
@@ -956,8 +959,14 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
                                                   ),
                                                   controller:
                                                       _excludeController,
-                                                  style: const TextStyle(
-                                                    fontWeight: FontWeight.bold,
+                                                  focusNode: _excludeFocus,
+                                                  readOnly: _excludeConfirmed,
+                                                  onTap: _onExcludeFieldTap,
+                                                  style: TextStyle(
+                                                    fontWeight:
+                                                        _excludeConfirmed
+                                                        ? FontWeight.bold
+                                                        : FontWeight.normal,
                                                   ),
                                                   decoration:
                                                       const InputDecoration(
@@ -1084,9 +1093,21 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
   }
 
   void _confirmExcludedSounds() {
-    _excludeController.text = ExcludedSounds.displayText(
-      _excludeController.text,
-    );
+    setState(() {
+      _excludeController.text = ExcludedSounds.displayText(
+        _excludeController.text,
+      );
+      _excludeConfirmed = true;
+    });
+    _excludeFocus.unfocus();
+  }
+
+  void _onExcludeFieldTap() {
+    if (!_excludeConfirmed) return;
+    setState(() {
+      _excludeController.clear();
+      _excludeConfirmed = false;
+    });
   }
 
   void _openWordDisplay() {
