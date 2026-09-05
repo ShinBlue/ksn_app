@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import '../models/word_data.dart';
 
@@ -11,6 +13,8 @@ class WordDisplayPage extends StatefulWidget {
   final bool enableKanaColor;
   final bool enableBlueFrame;
   final bool enableRedDoubleCircle;
+  final bool enableRandomOrder;
+  final Random? random;
 
   const WordDisplayPage({
     super.key,
@@ -22,6 +26,8 @@ class WordDisplayPage extends StatefulWidget {
     required this.enableKanaColor,
     this.enableBlueFrame = true,
     this.enableRedDoubleCircle = true,
+    this.enableRandomOrder = false,
+    this.random,
   });
 
   @override
@@ -81,6 +87,10 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
           }
         }
       }
+    }
+
+    if (widget.enableRandomOrder && items.length > 1) {
+      items.shuffle(widget.random);
     }
 
     setState(() {
@@ -209,10 +219,7 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
           key: Key('word-left-$index'),
           behavior: HitTestBehavior.opaque,
           onTap: widget.enableBlueFrame ? () => _toggleFrame(index) : null,
-          child: SizedBox(
-            width: 56,
-            height: fontSize * 1.8,
-          ),
+          child: SizedBox(width: 56, height: fontSize * 1.8),
         ),
         GestureDetector(
           key: Key('word-text-$index'),
@@ -289,9 +296,7 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
     }
 
     // 選択音をひらがなに正規化（拗音など2文字を先にマッチさせるため長い順）
-    final selectedNormalized = widget.selectedKanas
-        .map(_toHiragana)
-        .toList()
+    final selectedNormalized = widget.selectedKanas.map(_toHiragana).toList()
       ..sort((a, b) => b.length.compareTo(a.length));
 
     final List<TextSpan> spans = [];

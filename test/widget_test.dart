@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ksn_app/app_routes.dart';
@@ -35,15 +37,13 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(
-      MaterialApp(
-        routes: AppRoutes.table,
-        initialRoute: AppRoutes.gojuon,
-      ),
+      MaterialApp(routes: AppRoutes.table, initialRoute: AppRoutes.gojuon),
     );
     await tester.pumpAndSettle();
     expect(find.text('ことば表示アプリ'), findsWidgets);
     expect(find.text('青い枠'), findsOneWidget);
     expect(find.text('赤い二重丸'), findsOneWidget);
+    expect(find.text('ランダムに並べる'), findsOneWidget);
   });
 
   testWidgets('gojuon settings does not use vertical scroll in landscape', (
@@ -55,10 +55,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(
-      MaterialApp(
-        routes: AppRoutes.table,
-        initialRoute: AppRoutes.gojuon,
-      ),
+      MaterialApp(routes: AppRoutes.table, initialRoute: AppRoutes.gojuon),
     );
     await tester.pumpAndSettle();
 
@@ -80,10 +77,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(
-      MaterialApp(
-        routes: AppRoutes.table,
-        initialRoute: AppRoutes.gojuon,
-      ),
+      MaterialApp(routes: AppRoutes.table, initialRoute: AppRoutes.gojuon),
     );
     await tester.pumpAndSettle();
     expect(find.byType(BackButtonIcon), findsOneWidget);
@@ -92,10 +86,7 @@ void main() {
 
   testWidgets('sugoroku named route opens the game screen', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        routes: AppRoutes.table,
-        initialRoute: AppRoutes.sugoroku,
-      ),
+      MaterialApp(routes: AppRoutes.table, initialRoute: AppRoutes.sugoroku),
     );
     await tester.pumpAndSettle();
     expect(find.text('すごろく'), findsWidgets);
@@ -134,5 +125,45 @@ void main() {
     await tester.tap(find.byKey(const Key('word-text-0')));
     await tester.pump();
     expect(find.byKey(const Key('word-double-circle-0')), findsOneWidget);
+  });
+
+  testWidgets('random order switch shuffles selected words', (tester) async {
+    const originals = ['あか', 'あお', 'あき', 'あめ'];
+    final expected = List<String>.from(originals)..shuffle(Random(1));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WordDisplayPage(
+          wordDataList: [
+            for (var i = 0; i < originals.length; i++)
+              WordData(
+                type: '単語',
+                kana: 'あ',
+                number: i + 1,
+                level1: originals[i],
+              ),
+          ],
+          selectedKanas: const ['あ'],
+          selectedLevels: const ['レベル1'],
+          includeShortText: false,
+          displayFormat: 'リスト',
+          enableKanaColor: false,
+          enableRandomOrder: true,
+          random: Random(1),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(expected, isNot(originals));
+    for (var i = 0; i < expected.length; i++) {
+      expect(
+        find.descendant(
+          of: find.byKey(Key('word-text-$i')),
+          matching: find.text(expected[i]),
+        ),
+        findsOneWidget,
+      );
+    }
   });
 }

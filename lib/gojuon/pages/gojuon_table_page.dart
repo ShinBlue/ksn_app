@@ -39,6 +39,9 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
   // 表示した語をクリックして赤い二重丸を付ける
   bool enableRedDoubleCircle = true;
 
+  // 選択された単語・短文をランダムに並べる
+  bool enableRandomOrder = false;
+
   // CSVデータを格納するリスト
   List<WordData> wordDataList = [];
 
@@ -1056,6 +1059,15 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
                                         });
                                       },
                                     ),
+                                    _OptionSwitch(
+                                      label: 'ランダムに並べる',
+                                      value: enableRandomOrder,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          enableRandomOrder = value;
+                                        });
+                                      },
+                                    ),
                                   ],
                                 ),
                               ],
@@ -1160,6 +1172,7 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
           enableKanaColor: enableKanaColor,
           enableBlueFrame: enableBlueFrame,
           enableRedDoubleCircle: enableRedDoubleCircle,
+          enableRandomOrder: enableRandomOrder,
         ),
       ),
     );
