@@ -11,7 +11,7 @@
 /// gviz の CSV 出力の方が CORS を通しやすい。
 abstract final class WordListSource {
   /// 未設定なら同梱CSVだけを使う。
-  static const spreadsheetId = '';
+  static const spreadsheetId = '1uHXrR-RqSFHi1nWm4Pbx3E7cQZmx7ZueS7HPZEeuNI4';
 
   static const gid = '0';
 
