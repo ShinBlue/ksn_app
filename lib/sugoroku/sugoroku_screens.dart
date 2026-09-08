@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../analytics_service.dart';
+import '../app_layout.dart';
 import '../exit_to_kyozai.dart';
 import '../sound_service.dart';
 import 'sugoroku_animal_board_view.dart';
@@ -806,6 +807,7 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           final wideLayout = constraints.maxWidth >= 640;
+          final compact = AppLayout.isCompact(context);
           final leftPanel = _buildLeftPanel();
           final boardCenter = _buildBoardCenter();
           final rightPanel = _buildRightPanel(wideLayout: wideLayout);
@@ -840,6 +842,38 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
                     ],
                   ),
                 ),
+              ),
+            );
+          }
+
+          // スマホ相当: 盤面の下に左右パネルを縦積みして窮屈さを緩和
+          if (compact || constraints.maxWidth < 480) {
+            return Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: boardCenter,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    flex: 2,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          leftPanel,
+                          const SizedBox(height: 8),
+                          rightPanel,
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           }

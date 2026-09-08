@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../analytics_service.dart';
+import '../../app_layout.dart';
 import '../../exit_to_kyozai.dart';
 import '../excluded_sounds.dart';
 import '../models/kana_cell.dart';
+import '../models/layout_info.dart';
 import '../models/word_data.dart';
 import '../utils/layout_calculator.dart';
 import '../widgets/kana_text.dart';
@@ -433,359 +435,469 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
         body: SafeArea(
           child: LayoutBuilder(
             builder: (context, viewport) {
+              final isCompact = AppLayout.isCompact(context);
               final isLandscape = viewport.maxWidth > viewport.maxHeight;
-              final firstRow = kanaGrid[0];
-              final totalCellCount = firstRow.length;
+              final totalCellCount = kanaGrid[0].length;
               final layoutInfo = LayoutCalculator.calculateLayout(
                 context,
                 totalCellCount,
                 availableWidth: viewport.maxWidth - 32,
                 availableHeight: viewport.maxHeight - 24,
                 scaleFloor: isLandscape ? 0.2 : LayoutCalculator.minScale,
+                compact: isCompact,
               );
 
-              final table = Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+              if (isCompact) {
+                return _buildCompactBody(viewport, layoutInfo);
+              }
+              return _buildWideBody(viewport, layoutInfo, isLandscape);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactBody(BoxConstraints viewport, LayoutInfo layoutInfo) {
+    final settingsMaxHeight = (viewport.maxHeight * 0.48).clamp(220.0, 420.0);
+    return Column(
+      children: [
+        Expanded(
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: SingleChildScrollView(
+                  primary: false,
+                  padding: const EdgeInsets.all(8),
+                  child: SingleChildScrollView(
+                    primary: false,
+                    scrollDirection: Axis.horizontal,
+                    child: _buildKanaTableCard(layoutInfo),
+                  ),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // ベースのContainer
-                    Container(
-                      width: layoutInfo.containerWidth,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+              ),
+              Positioned(
+                top: 4,
+                left: 4,
+                child: Image.asset(
+                  'assets/images/gojuon_logo.png',
+                  width: 56,
+                  height: 56,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Material(
+          color: const Color(0xFFFFE4CC),
+          elevation: 4,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: settingsMaxHeight),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                    child: _buildSettingsControls(compact: true),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: _buildDisplayButton(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWideBody(
+    BoxConstraints viewport,
+    LayoutInfo layoutInfo,
+    bool isLandscape,
+  ) {
+    final table = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildKanaTableCard(layoutInfo),
+          const SizedBox(height: 16),
+          Container(
+            width: layoutInfo.containerWidth,
+            height:
+                layoutInfo.topContainerHeight *
+                LayoutCalculator.bottomContainerHeightRatio,
+            decoration: const BoxDecoration(color: Color(0xFFFFE4CC)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: _buildSettingsControls(compact: false),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final Widget bodyContent = isLandscape
+        ? SizedBox(
+            width: viewport.maxWidth,
+            height: viewport.maxHeight,
+            child: FittedBox(
+              fit: BoxFit.contain,
+              alignment: Alignment.center,
+              child: table,
+            ),
+          )
+        : SingleChildScrollView(
+            child: Transform.scale(
+              scale: layoutInfo.scale,
+              alignment: Alignment.center,
+              child: table,
+            ),
+          );
+
+    return Stack(
+      children: [
+        Align(alignment: Alignment.center, child: bodyContent),
+        Positioned(
+          top: 0,
+          left: 0,
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Image.asset(
+              'assets/images/gojuon_logo.png',
+              width: 120,
+              height: 120,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDisplayButton() {
+    return FilledButton(
+      onPressed: _openWordDisplay,
+      style: FilledButton.styleFrom(
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      child: const Text(
+        '表示',
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _buildSettingsControls({required bool compact}) {
+    final switches = Wrap(
+      spacing: compact ? 16 : 28,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        _OptionSwitch(
+          label: '選択音カラー',
+          value: enableKanaColor,
+          onChanged: (value) {
+            setState(() {
+              enableKanaColor = value;
+            });
+          },
+        ),
+        _OptionSwitch(
+          label: '強調枠をつける',
+          value: enableBlueFrame,
+          onChanged: (value) {
+            setState(() {
+              enableBlueFrame = value;
+            });
+          },
+        ),
+        _OptionSwitch(
+          label: '丸をつける',
+          value: enableRedDoubleCircle,
+          onChanged: (value) {
+            setState(() {
+              enableRedDoubleCircle = value;
+            });
+          },
+        ),
+        _OptionSwitch(
+          label: 'ランダムに並べる',
+          value: enableRandomOrder,
+          onChanged: (value) {
+            setState(() {
+              enableRandomOrder = value;
+            });
+          },
+        ),
+      ],
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            const Text(
+              '表示対象',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            for (final target in displayTargets.keys)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: Checkbox(
+                      value: displayTargets[target],
+                      onChanged: (value) {
+                        setState(() {
+                          displayTargets[target] = value ?? false;
+                        });
+                      },
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Padding(
-                        padding: EdgeInsets.only(
-                          left: layoutInfo.leftPadding,
-                          right: layoutInfo.rightPadding,
-                          top: 16,
-                          bottom: 16,
-                        ),
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            // メインコンテンツ
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // 列選択チェックボックス（あ段の上）
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: Wrap(
-                                    spacing: 4,
-                                    crossAxisAlignment:
-                                        WrapCrossAlignment.center,
-                                    children: [
-                                      ...kanaGrid[0].asMap().entries.map((
-                                        cellEntry,
-                                      ) {
-                                        final columnIndex = cellEntry.key;
-                                        final cell = cellEntry.value;
-                                        // 空セルや「ん、っ、ー」の列にはチェックボックスを配置しない
-                                        const disabledKanas = ['ん', 'っ', '−'];
-                                        if (cell.type == 'empty' ||
-                                            disabledKanas.contains(cell.kana)) {
-                                          return const SizedBox(
-                                            width: 48,
-                                            height: 48,
-                                          );
-                                        }
-                                        return SizedBox(
-                                          width: 48,
-                                          height: 48,
-                                          child: Checkbox(
-                                            value:
-                                                _isColumnSelectedForMainSection(
-                                                  columnIndex,
-                                                ),
-                                            onChanged: (value) {
-                                              toggleColumnForMainSection(
-                                                columnIndex,
-                                              );
-                                            },
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                          ),
-                                        );
-                                      }),
-                                    ],
-                                  ),
-                                ),
-                                // 清音・濁音・半濁音 (あ〜お段)
-                                ...kanaGrid.take(5).toList().asMap().entries.map(
-                                  (entry) {
-                                    final row = entry.value;
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 8),
-                                      child: Wrap(
-                                        spacing: 4,
-                                        crossAxisAlignment:
-                                            WrapCrossAlignment.center,
-                                        children: [
-                                          ...row.asMap().entries.map((
-                                            cellEntry,
-                                          ) {
-                                            final columnIndex = cellEntry.key;
-                                            final cell = cellEntry.value;
-                                            if (cell.type == 'empty') {
-                                              return const SizedBox(
-                                                width: 48,
-                                                height: 48,
-                                              );
-                                            }
-                                            final isActive =
-                                                kanaToggles[cell.kana] ?? false;
-                                            return SizedBox(
-                                              width: 48,
-                                              height: 48,
-                                              child: FilledButton(
-                                                onPressed: cell.kana.isNotEmpty
-                                                    ? () =>
-                                                          toggleKana(cell.kana)
-                                                    : null,
-                                                style: FilledButton.styleFrom(
-                                                  padding: EdgeInsets.zero,
-                                                  backgroundColor:
-                                                      _getThemeButtonColor(
-                                                        columnIndex,
-                                                        isActive,
-                                                      ),
-                                                  foregroundColor:
-                                                      _getThemeTextColor(
-                                                        columnIndex,
-                                                        isActive,
-                                                      ),
-                                                  elevation: isActive ? 2 : 0,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          8,
-                                                        ),
-                                                  ),
-                                                ),
-                                                child: KanaText(
-                                                  kana: cell.kana,
-                                                  fontSize: 22.5,
-                                                ),
-                                              ),
-                                            );
-                                          }),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
-                                // 拗音セクション
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 16),
-                                  child: Column(
-                                    children: [
-                                      // 列選択チェックボックス（拗音の最初の行の上）
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: 8,
-                                        ),
-                                        child: Wrap(
-                                          spacing: 4,
-                                          crossAxisAlignment:
-                                              WrapCrossAlignment.center,
-                                          children: [
-                                            ...kanaGrid[5].asMap().entries.map((
-                                              cellEntry,
-                                            ) {
-                                              final columnIndex = cellEntry.key;
-                                              final cell = cellEntry.value;
-                                              // 空セルや「ん、っ、ー」の列にはチェックボックスを配置しない
-                                              const disabledKanas = [
-                                                'ん',
-                                                'っ',
-                                                '−',
-                                              ];
-                                              if (cell.type == 'empty' ||
-                                                  disabledKanas.contains(
-                                                    cell.kana,
-                                                  )) {
-                                                return const SizedBox(
-                                                  width: 48,
-                                                  height: 48,
-                                                );
-                                              }
-                                              return SizedBox(
-                                                width: 48,
-                                                height: 48,
-                                                child: Checkbox(
-                                                  value:
-                                                      _isColumnSelectedForYoonSection(
-                                                        columnIndex,
-                                                      ),
-                                                  onChanged: (value) {
-                                                    toggleColumnForYoonSection(
-                                                      columnIndex,
-                                                    );
-                                                  },
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          4,
-                                                        ),
-                                                  ),
-                                                ),
-                                              );
-                                            }),
-                                          ],
-                                        ),
-                                      ),
-                                      // 拗音の行
-                                      ...kanaGrid.skip(5).toList().asMap().entries.map((
-                                        entry,
-                                      ) {
-                                        final row = entry.value;
-                                        return Padding(
-                                          padding: const EdgeInsets.only(
-                                            bottom: 8,
-                                          ),
-                                          child: Wrap(
-                                            spacing: 4,
-                                            crossAxisAlignment:
-                                                WrapCrossAlignment.center,
-                                            children: [
-                                              ...row.asMap().entries.map((
-                                                cellEntry,
-                                              ) {
-                                                final columnIndex =
-                                                    cellEntry.key;
-                                                final cell = cellEntry.value;
-                                                if (cell.type == 'empty') {
-                                                  return const SizedBox(
-                                                    width: 48,
-                                                    height: 48,
-                                                  );
-                                                }
-                                                final isActive =
-                                                    kanaToggles[cell.kana] ??
-                                                    false;
-                                                return SizedBox(
-                                                  width: 48,
-                                                  height: 48,
-                                                  child: FilledButton(
-                                                    onPressed:
-                                                        cell.kana.isNotEmpty
-                                                        ? () => toggleKana(
-                                                            cell.kana,
-                                                          )
-                                                        : null,
-                                                    style: FilledButton.styleFrom(
-                                                      padding: EdgeInsets.zero,
-                                                      backgroundColor:
-                                                          _getThemeButtonColor(
-                                                            columnIndex,
-                                                            isActive,
-                                                          ),
-                                                      foregroundColor:
-                                                          _getThemeTextColor(
-                                                            columnIndex,
-                                                            isActive,
-                                                          ),
-                                                      elevation: isActive
-                                                          ? 2
-                                                          : 0,
-                                                      shape: RoundedRectangleBorder(
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              8,
-                                                            ),
-                                                      ),
-                                                    ),
-                                                    child: KanaText(
-                                                      kana: cell.kana,
-                                                      fontSize: 22.5,
-                                                    ),
-                                                  ),
-                                                );
-                                              }),
-                                            ],
-                                          ),
-                                        );
-                                      }),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(target, style: const TextStyle(fontSize: 14)),
+                ],
+              ),
+            if (!compact) const SizedBox(width: 16),
+            const Text(
+              '表示形式',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            for (final format in ['リスト', '１つずつ'])
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: Radio<String>(
+                      value: format,
+                      groupValue: displayFormat,
+                      onChanged: (value) {
+                        setState(() {
+                          displayFormat = value ?? 'リスト';
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(format, style: const TextStyle(fontSize: 14)),
+                ],
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            const Text(
+              '表示指定',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            for (final spec in ['指定なし', 'No.1〜5', 'No.1〜10'])
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: Radio<String>(
+                      value: spec,
+                      groupValue: displaySpec,
+                      onChanged: (value) {
+                        setState(() {
+                          displaySpec = value ?? '指定なし';
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(spec, style: const TextStyle(fontSize: 14)),
+                ],
+              ),
+            if (!compact) const SizedBox(width: 16),
+            _buildExcludeSoundsControls(expandedField: compact),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (compact)
+          switches
+        else
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(child: switches),
+              const SizedBox(width: 12),
+              SizedBox(width: 120, height: 72, child: _buildDisplayButton()),
+            ],
+          ),
+      ],
+    );
+  }
+
+  Widget _buildKanaTableCard(LayoutInfo layoutInfo) {
+    return Container(
+      width: layoutInfo.containerWidth,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: layoutInfo.leftPadding,
+          right: layoutInfo.rightPadding,
+          top: 16,
+          bottom: 16,
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // メインコンテンツ
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 列選択チェックボックス（あ段の上）
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Wrap(
+                    spacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      ...kanaGrid[0].asMap().entries.map((cellEntry) {
+                        final columnIndex = cellEntry.key;
+                        final cell = cellEntry.value;
+                        // 空セルや「ん、っ、ー」の列にはチェックボックスを配置しない
+                        const disabledKanas = ['ん', 'っ', '−'];
+                        if (cell.type == 'empty' ||
+                            disabledKanas.contains(cell.kana)) {
+                          return const SizedBox(width: 48, height: 48);
+                        }
+                        return SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: Checkbox(
+                            value: _isColumnSelectedForMainSection(columnIndex),
+                            onChanged: (value) {
+                              toggleColumnForMainSection(columnIndex);
+                            },
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
                             ),
-                            // 行選択チェックボックス（右端に配置）
-                            ...kanaGrid.take(5).toList().asMap().entries.map((
-                              entry,
-                            ) {
-                              final rowIndex = entry.key;
-                              // 各チェックボックスのy座標を計算
-                              // 列選択チェックボックス行: 高さ48 + padding 8 = 56
-                              // 各段のボタンのtop位置を計算
-                              final top =
-                                  56.0 + // 列選択チェックボックス行
-                                  (rowIndex * 56.0); // 各行の高さ48 + padding 8
-                              return Positioned(
-                                right: 0,
-                                top: top + 4, // ボタンの中央に合わせる調整（ボタン48、チェックボックス40）
-                                child: SizedBox(
-                                  width: 40,
-                                  height: 40,
-                                  child: Checkbox(
-                                    value: _isRowSelected(rowIndex),
-                                    onChanged: (value) {
-                                      toggleRow(rowIndex);
-                                    },
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  ),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+                // 清音・濁音・半濁音 (あ〜お段)
+                ...kanaGrid.take(5).toList().asMap().entries.map((entry) {
+                  final row = entry.value;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Wrap(
+                      spacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        ...row.asMap().entries.map((cellEntry) {
+                          final columnIndex = cellEntry.key;
+                          final cell = cellEntry.value;
+                          if (cell.type == 'empty') {
+                            return const SizedBox(width: 48, height: 48);
+                          }
+                          final isActive = kanaToggles[cell.kana] ?? false;
+                          return SizedBox(
+                            width: 48,
+                            height: 48,
+                            child: FilledButton(
+                              onPressed: cell.kana.isNotEmpty
+                                  ? () => toggleKana(cell.kana)
+                                  : null,
+                              style: FilledButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                backgroundColor: _getThemeButtonColor(
+                                  columnIndex,
+                                  isActive,
                                 ),
-                              );
-                            }),
-                            // 拗音の行選択チェックボックス（右端に配置）
-                            ...kanaGrid.skip(5).toList().asMap().entries.map((
-                              entry,
-                            ) {
-                              final rowIndex = entry.key + 5; // 実際の行インデックス
-                              // 各チェックボックスのy座標を計算
-                              // 列選択チェックボックス行: 高さ48 + padding 8 = 56
-                              // あ段からお段: 5行 × 56 = 280
-                              // 拗音セクションとの間隔: 16
-                              // 拗音の列選択チェックボックス行: 56
-                              final top =
-                                  56.0 + // 列選択チェックボックス行
-                                  280.0 + // あ段からお段
-                                  16.0 + // 拗音セクションとの間隔
-                                  56.0 + // 拗音の列選択チェックボックス行
-                                  (entry.key * 56.0); // 拗音の各行
-                              return Positioned(
-                                right: 0,
-                                top: top + 4, // ボタンの中央に合わせる調整（ボタン48、チェックボックス40）
-                                child: SizedBox(
-                                  width: 40,
-                                  height: 40,
-                                  child: Checkbox(
-                                    value: _isRowSelected(rowIndex),
-                                    onChanged: (value) {
-                                      toggleRow(rowIndex);
-                                    },
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
+                                foregroundColor: _getThemeTextColor(
+                                  columnIndex,
+                                  isActive,
+                                ),
+                                elevation: isActive ? 2 : 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: KanaText(kana: cell.kana, fontSize: 22.5),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  );
+                }),
+                // 拗音セクション
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Column(
+                    children: [
+                      // 列選択チェックボックス（拗音の最初の行の上）
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Wrap(
+                          spacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            ...kanaGrid[5].asMap().entries.map((cellEntry) {
+                              final columnIndex = cellEntry.key;
+                              final cell = cellEntry.value;
+                              // 空セルや「ん、っ、ー」の列にはチェックボックスを配置しない
+                              const disabledKanas = ['ん', 'っ', '−'];
+                              if (cell.type == 'empty' ||
+                                  disabledKanas.contains(cell.kana)) {
+                                return const SizedBox(width: 48, height: 48);
+                              }
+                              return SizedBox(
+                                width: 48,
+                                height: 48,
+                                child: Checkbox(
+                                  value: _isColumnSelectedForYoonSection(
+                                    columnIndex,
+                                  ),
+                                  onChanged: (value) {
+                                    toggleColumnForYoonSection(columnIndex);
+                                  },
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(4),
                                   ),
                                 ),
                               );
@@ -793,267 +905,121 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
                           ],
                         ),
                       ),
-                    ),
-                    // ベースのContainerと下側のContainerの間に隙間を開ける
-                    const SizedBox(height: 16),
-                    // ベースのContainerの下に配置するContainer
-                    Container(
-                      width: layoutInfo.containerWidth,
-                      height:
-                          layoutInfo.topContainerHeight *
-                          LayoutCalculator.bottomContainerHeightRatio,
-                      decoration: const BoxDecoration(color: Color(0xFFFFE4CC)),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // 1行目: 表示対象 + 表示形式
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 4,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                const Text(
-                                  '表示対象',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                for (final target in displayTargets.keys)
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: Checkbox(
-                                          value: displayTargets[target],
-                                          onChanged: (value) {
-                                            setState(() {
-                                              displayTargets[target] =
-                                                  value ?? false;
-                                            });
-                                          },
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              4,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        target,
-                                        style: const TextStyle(fontSize: 14),
-                                      ),
-                                    ],
-                                  ),
-                                const SizedBox(width: 16),
-                                const Text(
-                                  '表示形式',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                for (final format in ['リスト', '１つずつ'])
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: Radio<String>(
-                                          value: format,
-                                          groupValue: displayFormat,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              displayFormat = value ?? 'リスト';
-                                            });
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        format,
-                                        style: const TextStyle(fontSize: 14),
-                                      ),
-                                    ],
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            // 2行目: 表示指定 + 除外する音
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                const Text(
-                                  '表示指定',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                for (final spec in [
-                                  '指定なし',
-                                  'No.1〜5',
-                                  'No.1〜10',
-                                ])
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: Radio<String>(
-                                          value: spec,
-                                          groupValue: displaySpec,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              displaySpec = value ?? '指定なし';
-                                            });
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        spec,
-                                        style: const TextStyle(fontSize: 14),
-                                      ),
-                                    ],
-                                  ),
-                                const SizedBox(width: 16),
-                                _buildExcludeSoundsControls(),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            // 3行目: スイッチ群 + 表示ボタン
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Expanded(
-                                  child: Wrap(
-                                    spacing: 28,
-                                    runSpacing: 8,
-                                    crossAxisAlignment:
-                                        WrapCrossAlignment.center,
-                                    children: [
-                                      _OptionSwitch(
-                                        label: '選択音カラー',
-                                        value: enableKanaColor,
-                                        onChanged: (value) {
-                                          setState(() {
-                                            enableKanaColor = value;
-                                          });
-                                        },
-                                      ),
-                                      _OptionSwitch(
-                                        label: '強調枠をつける',
-                                        value: enableBlueFrame,
-                                        onChanged: (value) {
-                                          setState(() {
-                                            enableBlueFrame = value;
-                                          });
-                                        },
-                                      ),
-                                      _OptionSwitch(
-                                        label: '丸をつける',
-                                        value: enableRedDoubleCircle,
-                                        onChanged: (value) {
-                                          setState(() {
-                                            enableRedDoubleCircle = value;
-                                          });
-                                        },
-                                      ),
-                                      _OptionSwitch(
-                                        label: 'ランダムに並べる',
-                                        value: enableRandomOrder,
-                                        onChanged: (value) {
-                                          setState(() {
-                                            enableRandomOrder = value;
-                                          });
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                SizedBox(
-                                  width: 120,
-                                  height: 72,
+                      // 拗音の行
+                      ...kanaGrid.skip(5).toList().asMap().entries.map((entry) {
+                        final row = entry.value;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Wrap(
+                            spacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              ...row.asMap().entries.map((cellEntry) {
+                                final columnIndex = cellEntry.key;
+                                final cell = cellEntry.value;
+                                if (cell.type == 'empty') {
+                                  return const SizedBox(width: 48, height: 48);
+                                }
+                                final isActive =
+                                    kanaToggles[cell.kana] ?? false;
+                                return SizedBox(
+                                  width: 48,
+                                  height: 48,
                                   child: FilledButton(
-                                    onPressed: _openWordDisplay,
+                                    onPressed: cell.kana.isNotEmpty
+                                        ? () => toggleKana(cell.kana)
+                                        : null,
                                     style: FilledButton.styleFrom(
-                                      backgroundColor: Colors.blue,
-                                      foregroundColor: Colors.white,
+                                      padding: EdgeInsets.zero,
+                                      backgroundColor: _getThemeButtonColor(
+                                        columnIndex,
+                                        isActive,
+                                      ),
+                                      foregroundColor: _getThemeTextColor(
+                                        columnIndex,
+                                        isActive,
+                                      ),
+                                      elevation: isActive ? 2 : 0,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                     ),
-                                    child: const Text(
-                                      '表示',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                    child: KanaText(
+                                      kana: cell.kana,
+                                      fontSize: 22.5,
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                                );
+                              }),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
                 ),
-              );
-
-              final Widget bodyContent = isLandscape
-                  ? SizedBox(
-                      width: viewport.maxWidth,
-                      height: viewport.maxHeight,
-                      child: FittedBox(
-                        fit: BoxFit.contain,
-                        alignment: Alignment.center,
-                        child: table,
-                      ),
-                    )
-                  : SingleChildScrollView(
-                      child: Transform.scale(
-                        scale: layoutInfo.scale,
-                        alignment: Alignment.center,
-                        child: table,
-                      ),
-                    );
-
-              return Stack(
-                children: [
-                  Align(alignment: Alignment.center, child: bodyContent),
-                  // 画面の左上にlogo.pngを配置
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Image.asset(
-                        'assets/images/gojuon_logo.png',
-                        width: 120,
-                        height: 120,
-                      ),
+              ],
+            ),
+            // 行選択チェックボックス（右端に配置）
+            ...kanaGrid.take(5).toList().asMap().entries.map((entry) {
+              final rowIndex = entry.key;
+              // 各チェックボックスのy座標を計算
+              // 列選択チェックボックス行: 高さ48 + padding 8 = 56
+              // 各段のボタンのtop位置を計算
+              final top =
+                  56.0 + // 列選択チェックボックス行
+                  (rowIndex * 56.0); // 各行の高さ48 + padding 8
+              return Positioned(
+                right: 0,
+                top: top + 4, // ボタンの中央に合わせる調整（ボタン48、チェックボックス40）
+                child: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Checkbox(
+                    value: _isRowSelected(rowIndex),
+                    onChanged: (value) {
+                      toggleRow(rowIndex);
+                    },
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
                     ),
                   ),
-                ],
+                ),
               );
-            },
-          ),
+            }),
+            // 拗音の行選択チェックボックス（右端に配置）
+            ...kanaGrid.skip(5).toList().asMap().entries.map((entry) {
+              final rowIndex = entry.key + 5; // 実際の行インデックス
+              // 各チェックボックスのy座標を計算
+              // 列選択チェックボックス行: 高さ48 + padding 8 = 56
+              // あ段からお段: 5行 × 56 = 280
+              // 拗音セクションとの間隔: 16
+              // 拗音の列選択チェックボックス行: 56
+              final top =
+                  56.0 + // 列選択チェックボックス行
+                  280.0 + // あ段からお段
+                  16.0 + // 拗音セクションとの間隔
+                  56.0 + // 拗音の列選択チェックボックス行
+                  (entry.key * 56.0); // 拗音の各行
+              return Positioned(
+                right: 0,
+                top: top + 4, // ボタンの中央に合わせる調整（ボタン48、チェックボックス40）
+                child: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Checkbox(
+                    value: _isRowSelected(rowIndex),
+                    onChanged: (value) {
+                      toggleRow(rowIndex);
+                    },
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ],
         ),
       ),
     );
@@ -1069,7 +1035,76 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
     return _getKanaTextColor(columnIndex, isActive, context);
   }
 
-  Widget _buildExcludeSoundsControls() {
+  Widget _buildExcludeSoundsControls({bool expandedField = false}) {
+    final field = KeyedSubtree(
+      key: const Key('exclude-sounds-field'),
+      child: _excludeConfirmed
+          ? InputDecorator(
+              decoration: const InputDecoration(
+                isDense: true,
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+              ),
+              child: Text(
+                _excludeController.text,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            )
+          : TextField(
+              key: ValueKey(_excludeFieldEpoch),
+              controller: _excludeController,
+              focusNode: _excludeFocus,
+              style: const TextStyle(fontWeight: FontWeight.normal),
+              decoration: const InputDecoration(
+                hintText: '例: きくけ　きゃ',
+                isDense: true,
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+              ),
+            ),
+    );
+    final button = SizedBox(
+      height: 36,
+      child: FilledButton(
+        key: Key(
+          _excludeConfirmed ? 'exclude-sounds-clear' : 'exclude-sounds-confirm',
+        ),
+        onPressed: _excludeConfirmed
+            ? _clearExcludedSounds
+            : _confirmExcludedSounds,
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+        ),
+        child: Text(_excludeConfirmed ? 'クリア' : '決定'),
+      ),
+    );
+
+    if (expandedField) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            '除外する音',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: field),
+              const SizedBox(width: 8),
+              button,
+            ],
+          ),
+        ],
+      );
+    }
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -1079,60 +1114,9 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(width: 8),
-        SizedBox(
-          width: 160,
-          child: KeyedSubtree(
-            key: const Key('exclude-sounds-field'),
-            child: _excludeConfirmed
-                ? InputDecorator(
-                    decoration: const InputDecoration(
-                      isDense: true,
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
-                      ),
-                    ),
-                    child: Text(
-                      _excludeController.text,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  )
-                : TextField(
-                    key: ValueKey(_excludeFieldEpoch),
-                    controller: _excludeController,
-                    focusNode: _excludeFocus,
-                    style: const TextStyle(fontWeight: FontWeight.normal),
-                    decoration: const InputDecoration(
-                      hintText: '例: きくけ　きゃ',
-                      isDense: true,
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
-                      ),
-                    ),
-                  ),
-          ),
-        ),
+        SizedBox(width: 160, child: field),
         const SizedBox(width: 8),
-        SizedBox(
-          height: 36,
-          child: FilledButton(
-            key: Key(
-              _excludeConfirmed
-                  ? 'exclude-sounds-clear'
-                  : 'exclude-sounds-confirm',
-            ),
-            onPressed: _excludeConfirmed
-                ? _clearExcludedSounds
-                : _confirmExcludedSounds,
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-            ),
-            child: Text(_excludeConfirmed ? 'クリア' : '決定'),
-          ),
-        ),
+        button,
       ],
     );
   }

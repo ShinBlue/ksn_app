@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import '../../app_layout.dart';
 import '../excluded_sounds.dart';
 import '../models/display_item.dart';
 import '../models/word_data.dart';
@@ -64,7 +65,11 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
   final Set<int> _circled = {};
 
   static const _sideTapWidth = 56.0;
+  static const _sideTapWidthCompact = 28.0;
   static const _listFontSize = 32.0;
+  static const _listFontSizeCompact = 26.0;
+  static const _singleFontSize = 48.0;
+  static const _singleFontSizeCompact = 36.0;
   static const _frameToggleSize = 28.0;
 
   @override
@@ -90,11 +95,7 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
         if (wordData.type == '短文') {
           if (widget.includeShortText) {
             if (wordData.level1 != null && wordData.level1!.isNotEmpty) {
-              _addIfAllowed(
-                kanaItems,
-                wordData.level1!,
-                isShortSentence: true,
-              );
+              _addIfAllowed(kanaItems, wordData.level1!, isShortSentence: true);
             }
           }
           continue;
@@ -181,16 +182,17 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
     return AppBar();
   }
 
-  Widget? _buildPrintButton() {
+  Widget? _buildPrintButton({required bool compact}) {
     if (displayItems.isEmpty) return null;
     return FloatingActionButton(
       key: const Key('print-words-button'),
       tooltip: '印刷',
+      mini: compact,
       backgroundColor: const Color(0xFF1E88E5),
       foregroundColor: Colors.white,
       elevation: 4,
       onPressed: _onPrintPressed,
-      child: const Icon(Icons.print, size: 28),
+      child: Icon(Icons.print, size: compact ? 22 : 28),
     );
   }
 
@@ -216,6 +218,7 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
 
   @override
   Widget build(BuildContext context) {
+    final compact = AppLayout.isCompact(context);
     if (displayItems.isEmpty) {
       return Scaffold(
         appBar: _buildAppBar(),
@@ -225,17 +228,20 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
 
     return Scaffold(
       appBar: _buildAppBar(),
-      floatingActionButton: _buildPrintButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
+      floatingActionButton: _buildPrintButton(compact: compact),
+      floatingActionButtonLocation: compact
+          ? FloatingActionButtonLocation.endFloat
+          : FloatingActionButtonLocation.endTop,
       body: widget.displayFormat == 'リスト'
-          ? _buildListView()
-          : _buildSingleView(),
+          ? _buildListView(compact: compact)
+          : _buildSingleView(compact: compact),
     );
   }
 
-  Widget _buildListView() {
+  Widget _buildListView({required bool compact}) {
+    final fontSize = compact ? _listFontSizeCompact : _listFontSize;
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      padding: EdgeInsets.symmetric(vertical: 16, horizontal: compact ? 8 : 16),
       itemCount: displayItems.length,
       itemBuilder: (context, index) {
         return Padding(
@@ -243,42 +249,54 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
           child: _buildMarkedItem(
             index: index,
             text: displayItems[index].text,
-            fontSize: _listFontSize,
+            fontSize: fontSize,
             expandToRow: true,
+            compact: compact,
           ),
         );
       },
     );
   }
 
-  Widget _buildSingleView() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildMarkedItem(
-            index: currentIndex,
-            text: displayItems[currentIndex].text,
-            fontSize: 48,
-            fontWeight: FontWeight.bold,
-          ),
-          const SizedBox(height: 32),
-          _buildPageControls(
-            label: '${currentIndex + 1} / ${displayItems.length}',
-            canGoBack: currentIndex > 0,
-            canGoForward: currentIndex < displayItems.length - 1,
-            onBack: () {
-              setState(() {
-                currentIndex--;
-              });
-            },
-            onForward: () {
-              setState(() {
-                currentIndex++;
-              });
-            },
-          ),
-        ],
+  Widget _buildSingleView({required bool compact}) {
+    final fontSize = compact ? _singleFontSizeCompact : _singleFontSize;
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 16),
+        child: Column(
+          children: [
+            Expanded(
+              child: Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: _buildMarkedItem(
+                    index: currentIndex,
+                    text: displayItems[currentIndex].text,
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.bold,
+                    compact: compact,
+                  ),
+                ),
+              ),
+            ),
+            _buildPageControls(
+              label: '${currentIndex + 1} / ${displayItems.length}',
+              canGoBack: currentIndex > 0,
+              canGoForward: currentIndex < displayItems.length - 1,
+              onBack: () {
+                setState(() {
+                  currentIndex--;
+                });
+              },
+              onForward: () {
+                setState(() {
+                  currentIndex++;
+                });
+              },
+            ),
+            SizedBox(height: compact ? 8 : 16),
+          ],
+        ),
       ),
     );
   }
@@ -317,9 +335,11 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
     required double fontSize,
     FontWeight? fontWeight,
     bool expandToRow = false,
+    bool compact = false,
   }) {
     final framed = widget.enableBlueFrame && _framed.contains(index);
     final circled = widget.enableRedDoubleCircle && _circled.contains(index);
+    final sideTapWidth = compact ? _sideTapWidthCompact : _sideTapWidth;
 
     final textWidget = GestureDetector(
       key: Key('word-text-$index'),
@@ -391,10 +411,10 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(width: _sideTapWidth, height: fontSize * 1.8),
+        SizedBox(width: sideTapWidth, height: fontSize * 1.8),
         textWidget,
         SizedBox(
-          width: _sideTapWidth,
+          width: sideTapWidth,
           height: fontSize * 1.8,
           child: Align(alignment: Alignment.centerRight, child: frameToggle),
         ),

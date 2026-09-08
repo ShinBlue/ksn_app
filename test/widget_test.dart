@@ -139,7 +139,8 @@ void main() {
   testWidgets('gojuon settings does not use vertical scroll in landscape', (
     tester,
   ) async {
-    tester.view.physicalSize = const Size(1280, 500);
+    // shortestSide >= 600 で wide レイアウト（FittedBox）になるサイズ
+    tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -158,6 +159,25 @@ void main() {
       ),
       findsNothing,
     );
+  });
+
+  testWidgets('gojuon compact layout keeps display CTA on narrow phones', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(routes: AppRoutes.table, initialRoute: AppRoutes.gojuon),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('表示'), findsOneWidget);
+    expect(find.text('強調枠をつける'), findsOneWidget);
+    expect(find.byKey(const Key('exclude-sounds-field')), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('game entry screens show a back button', (tester) async {
@@ -310,7 +330,10 @@ void main() {
     await tester.pump();
 
     expect(find.byType(TextField), findsOneWidget);
-    expect(tester.widget<TextField>(find.byType(TextField)).controller?.text, isEmpty);
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller?.text,
+      isEmpty,
+    );
     expect(find.text('決定'), findsOneWidget);
     expect(find.byKey(const Key('exclude-sounds-confirm')), findsOneWidget);
 

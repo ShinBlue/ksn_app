@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../analytics_service.dart';
+import '../app_layout.dart';
 import '../exit_to_kyozai.dart';
 import 'karuta_catalog.dart';
 import 'karuta_game_screen.dart';
@@ -264,8 +265,50 @@ class _KarutaSelectionScreenState extends State<KarutaSelectionScreen> {
             ? Center(child: Text(_error!))
             : LayoutBuilder(
                 builder: (context, constraints) {
+                  final compact = AppLayout.isCompact(context);
                   const horizontalPadding = 8.0;
                   const columnGap = 6.0;
+
+                  if (compact) {
+                    final tableWidth =
+                        constraints.maxWidth - horizontalPadding * 2;
+                    final tableHeight = constraints.maxHeight * 0.58;
+                    final metrics = KarutaSelectionMetrics.fit(
+                      tableWidth: tableWidth,
+                      tableHeight: tableHeight,
+                    );
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                        vertical: 4,
+                      ),
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: _buildKarutaTableArea(metrics: metrics),
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: (constraints.maxHeight * 0.34).clamp(
+                              160.0,
+                              280.0,
+                            ),
+                            child: SingleChildScrollView(
+                              child: _SelectionSidePanel(
+                                selectedCount: _selected.length,
+                                targetCount: _targetCount,
+                                layoutMode: _layoutMode,
+                                onLayoutModeChanged: (mode) =>
+                                    setState(() => _layoutMode = mode),
+                                onStart: _startGame,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
                   final sidePanelWidth = (constraints.maxWidth * 0.24).clamp(
                     120.0,
                     160.0,
@@ -289,113 +332,7 @@ class _KarutaSelectionScreenState extends State<KarutaSelectionScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Expanded(
-                          child: Column(
-                            children: [
-                              Center(
-                                child: _CountStatusChip(
-                                  metrics: metrics,
-                                  selectedCount: _targetCount,
-                                  onTap: _showCountPicker,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Opacity(
-                                opacity: _targetCount == null ? 0.35 : 1,
-                                child: IgnorePointer(
-                                  ignoring: _targetCount == null,
-                                  child: Center(
-                                    child: _PresetBar(
-                                      metrics: metrics,
-                                      isAiueoSelected: _isPresetSelected(
-                                        karutaAiueoCharacters,
-                                      ),
-                                      isSeionSelected: _isPresetSelected(
-                                        karutaSeionCharacters,
-                                      ),
-                                      isDakutenSelected: _isPresetSelected(
-                                        karutaDakutenCharacters,
-                                      ),
-                                      isVoicedSelected: _isPresetSelected(
-                                        karutaVoicedCharacters,
-                                      ),
-                                      isAllSelected: _isPresetSelected(
-                                        karutaAllCharacters,
-                                      ),
-                                      onToggleAiueo: () =>
-                                          _togglePreset(karutaAiueoCharacters),
-                                      onToggleSeion: () =>
-                                          _togglePreset(karutaSeionCharacters),
-                                      onToggleDakuten: () => _togglePreset(
-                                        karutaDakutenCharacters,
-                                      ),
-                                      onToggleVoiced: () =>
-                                          _togglePreset(karutaVoicedCharacters),
-                                      onToggleAll: () =>
-                                          _togglePreset(karutaAllCharacters),
-                                      onClear: _clearAll,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-                              Expanded(
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    Opacity(
-                                      opacity: _targetCount == null ? 0.35 : 1,
-                                      child: IgnorePointer(
-                                        ignoring: _targetCount == null,
-                                        child: Center(
-                                          child: Padding(
-                                            padding: const EdgeInsets.only(
-                                              bottom: KarutaSelectionMetrics
-                                                  .tableBottomPadding,
-                                            ),
-                                            child: SizedBox(
-                                              width: metrics.pairedRowWidth,
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  for (final line
-                                                      in karutaDisplayLines)
-                                                    _KarutaDisplayLineSection(
-                                                      line: line,
-                                                      metrics: metrics,
-                                                      selected: _selected,
-                                                      isRowFullySelected:
-                                                          _isRowFullySelected,
-                                                      isRowPartiallySelected:
-                                                          _isRowPartiallySelected,
-                                                      onToggleRow: _toggleRow,
-                                                      onToggleChar: _toggle,
-                                                    ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    if (_targetCount == null)
-                                      Text(
-                                        'まず あそぶ まいすうを\nえらんでね',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.grey.shade500,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                          child: _buildKarutaTableArea(metrics: metrics),
                         ),
                         const SizedBox(width: columnGap),
                         SizedBox(
@@ -415,6 +352,100 @@ class _KarutaSelectionScreenState extends State<KarutaSelectionScreen> {
                 },
               ),
       ),
+    );
+  }
+
+  Widget _buildKarutaTableArea({required KarutaSelectionMetrics metrics}) {
+    return Column(
+      children: [
+        Center(
+          child: _CountStatusChip(
+            metrics: metrics,
+            selectedCount: _targetCount,
+            onTap: _showCountPicker,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Opacity(
+          opacity: _targetCount == null ? 0.35 : 1,
+          child: IgnorePointer(
+            ignoring: _targetCount == null,
+            child: Center(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: _PresetBar(
+                  metrics: metrics,
+                  isAiueoSelected: _isPresetSelected(karutaAiueoCharacters),
+                  isSeionSelected: _isPresetSelected(karutaSeionCharacters),
+                  isDakutenSelected: _isPresetSelected(karutaDakutenCharacters),
+                  isVoicedSelected: _isPresetSelected(karutaVoicedCharacters),
+                  isAllSelected: _isPresetSelected(karutaAllCharacters),
+                  onToggleAiueo: () => _togglePreset(karutaAiueoCharacters),
+                  onToggleSeion: () => _togglePreset(karutaSeionCharacters),
+                  onToggleDakuten: () => _togglePreset(karutaDakutenCharacters),
+                  onToggleVoiced: () => _togglePreset(karutaVoicedCharacters),
+                  onToggleAll: () => _togglePreset(karutaAllCharacters),
+                  onClear: _clearAll,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
+        Expanded(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Opacity(
+                opacity: _targetCount == null ? 0.35 : 1,
+                child: IgnorePointer(
+                  ignoring: _targetCount == null,
+                  child: Center(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: KarutaSelectionMetrics.tableBottomPadding,
+                        ),
+                        child: SizedBox(
+                          width: metrics.pairedRowWidth,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              for (final line in karutaDisplayLines)
+                                _KarutaDisplayLineSection(
+                                  line: line,
+                                  metrics: metrics,
+                                  selected: _selected,
+                                  isRowFullySelected: _isRowFullySelected,
+                                  isRowPartiallySelected:
+                                      _isRowPartiallySelected,
+                                  onToggleRow: _toggleRow,
+                                  onToggleChar: _toggle,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              if (_targetCount == null)
+                Text(
+                  'まず あそぶ まいすうを\nえらんでね',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

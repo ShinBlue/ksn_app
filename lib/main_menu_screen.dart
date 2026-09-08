@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'analytics_service.dart';
+import 'app_layout.dart';
 import 'app_routes.dart';
 
 class MainMenuScreen extends StatelessWidget {
   const MainMenuScreen({super.key});
-
-  static bool _isPhoneLayout(BuildContext context) {
-    return MediaQuery.sizeOf(context).shortestSide < 600;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +13,7 @@ class MainMenuScreen extends StatelessWidget {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            if (!_isPhoneLayout(context)) {
+            if (!AppLayout.isCompact(context)) {
               return Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 480),
@@ -52,7 +49,8 @@ class MainMenuScreen extends StatelessWidget {
                             onSugoroku: () => _openSugoroku(context),
                             onKaruta: () => _openKaruta(context),
                             onGojuon: () => _openGojuon(context),
-                            onComingSoon: (name) => _showComingSoon(context, name),
+                            onComingSoon: (name) =>
+                                _showComingSoon(context, name),
                           )
                         : _PortraitMenu(
                             width: constraints.maxWidth,
@@ -61,7 +59,8 @@ class MainMenuScreen extends StatelessWidget {
                             onSugoroku: () => _openSugoroku(context),
                             onKaruta: () => _openKaruta(context),
                             onGojuon: () => _openGojuon(context),
-                            onComingSoon: (name) => _showComingSoon(context, name),
+                            onComingSoon: (name) =>
+                                _showComingSoon(context, name),
                           ),
                   ),
                 ),
@@ -196,7 +195,9 @@ class _PortraitMenu extends StatelessWidget {
     final buttonSpacing = isCompact ? 12.0 : 20.0;
 
     return Column(
-      mainAxisAlignment: isCompact ? MainAxisAlignment.center : MainAxisAlignment.start,
+      mainAxisAlignment: isCompact
+          ? MainAxisAlignment.center
+          : MainAxisAlignment.start,
       children: [
         SizedBox(height: topSpacing),
         _MenuHeader(
@@ -289,10 +290,7 @@ class _MenuHeader extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Image.asset(
-          'assets/images/ksn_logo.png',
-          height: logoSize,
-        ),
+        Image.asset('assets/images/ksn_logo.png', height: logoSize),
         const SizedBox(height: 8),
         Text(
           'ことばサポートネット',
@@ -441,7 +439,11 @@ class _GameButton extends StatelessWidget {
                   ),
                 ),
               ),
-              Icon(Icons.arrow_forward_ios, color: Colors.white, size: compact ? 14 : 18),
+              Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.white,
+                size: compact ? 14 : 18,
+              ),
             ],
           ),
         ),

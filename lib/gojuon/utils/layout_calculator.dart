@@ -46,9 +46,13 @@ class LayoutCalculator {
         checkboxWidth;
   }
 
-  // コンテナ幅を計算
-  static double calculateContainerWidth(double contentWidth) {
+  // コンテナ幅を計算（compact では設定パネル用の 800px 下限を付けない）
+  static double calculateContainerWidth(
+    double contentWidth, {
+    bool compact = false,
+  }) {
     final baseContainerWidth = contentWidth + leftPadding + leftPadding;
+    if (compact) return baseContainerWidth;
     return baseContainerWidth > minWidthForDisplayTargets
         ? baseContainerWidth
         : minWidthForDisplayTargets;
@@ -101,6 +105,7 @@ class LayoutCalculator {
     double? availableWidth,
     double? availableHeight,
     double scaleFloor = minScale,
+    bool compact = false,
   }) {
     final mediaQuery = MediaQuery.of(context);
     final screenWidth = mediaQuery.size.width;
@@ -114,7 +119,10 @@ class LayoutCalculator {
         calculateAvailableHeight(screenHeight, topPadding, bottomPadding);
 
     final contentWidth = calculateContentWidth(totalCellCount);
-    final containerWidth = calculateContainerWidth(contentWidth);
+    final containerWidth = calculateContainerWidth(
+      contentWidth,
+      compact: compact,
+    );
     final estimatedBaseHeight = calculateEstimatedBaseHeight();
     final topContainerHeight = calculateTopContainerHeight(estimatedBaseHeight);
     final estimatedTotalHeight = calculateEstimatedTotalHeight(
