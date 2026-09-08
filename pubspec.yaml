@@ -40,6 +40,8 @@ dependencies:
   firebase_analytics: ^12.4.2
   url_launcher: ^6.3.2
   http: ^1.6.0
+  pdf: ^3.13.0
+  printing: ^5.15.0
 
 dev_dependencies:
   flutter_test:
@@ -78,6 +80,7 @@ flutter:
     - assets/sounds/draw.wav
     - assets/data/karuta_sentences.csv
     - assets/data/gojuon_words.csv
+    - assets/fonts/NotoSansJP-Regular.ttf
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

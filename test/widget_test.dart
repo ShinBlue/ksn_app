@@ -47,50 +47,41 @@ void main() {
     expect(find.text('除外する音'), findsOneWidget);
     expect(find.byKey(const Key('exclude-sounds-field')), findsOneWidget);
     expect(find.text('決定'), findsOneWidget);
-    expect(find.text('5語'), findsOneWidget);
-    expect(find.text('10語'), findsOneWidget);
-    expect(find.text('（'), findsOneWidget);
+    expect(find.text('表示指定'), findsOneWidget);
+    expect(find.text('指定なし'), findsOneWidget);
+    expect(find.text('1〜5'), findsOneWidget);
+    expect(find.text('1〜10'), findsOneWidget);
+    expect(find.text('5語'), findsNothing);
+    expect(find.text('10語'), findsNothing);
   });
 
-  testWidgets('page size is disabled when one-by-one format is selected', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(1280, 900);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
+  testWidgets('display spec limits words by number range', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(routes: AppRoutes.table, initialRoute: AppRoutes.gojuon),
-    );
-    await tester.pumpAndSettle();
-
-    final oneByOne = find
-        .ancestor(of: find.text('１つずつ'), matching: find.byType(Row))
-        .first;
-    await tester.tap(
-      find.descendant(of: oneByOne, matching: find.byType(Radio<String>)),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('5語'), findsOneWidget);
-    expect(find.text('10語'), findsOneWidget);
-    expect(find.text('（'), findsOneWidget);
-    expect(find.text('）'), findsOneWidget);
-    final pageSizeRadios = tester
-        .widgetList<Radio<int>>(find.byType(Radio<int>))
-        .toList();
-    expect(pageSizeRadios, hasLength(2));
-    expect(pageSizeRadios.every((radio) => radio.onChanged == null), isTrue);
-    expect(
-      find.ancestor(
-        of: find.text('5語'),
-        matching: find.byWidgetPredicate(
-          (widget) => widget is Opacity && widget.opacity < 1,
+      MaterialApp(
+        home: WordDisplayPage(
+          wordDataList: [
+            for (var i = 1; i <= 8; i++)
+              WordData(type: '単語', kana: 'あ', number: i, level1: '語$i'),
+            WordData(type: '短文', kana: 'あ', number: 3, level1: '短文3'),
+            WordData(type: '短文', kana: 'あ', number: 7, level1: '短文7'),
+          ],
+          selectedKanas: const ['あ'],
+          selectedLevels: const ['レベル1'],
+          includeShortText: true,
+          displayFormat: 'リスト',
+          displaySpec: '1〜5',
+          enableKanaColor: false,
         ),
       ),
-      findsOneWidget,
     );
+    await tester.pumpAndSettle();
+
+    expect(find.text('語1'), findsOneWidget);
+    expect(find.text('語5'), findsOneWidget);
+    expect(find.text('短文3'), findsOneWidget);
+    expect(find.text('語6'), findsNothing);
+    expect(find.text('短文7'), findsNothing);
+    expect(find.byType(ListView), findsOneWidget);
   });
 
   testWidgets('gojuon settings does not use vertical scroll in landscape', (
@@ -164,6 +155,7 @@ void main() {
     expect(find.text('あか'), findsOneWidget);
     expect(find.byKey(const Key('word-blue-frame-0')), findsNothing);
     expect(find.byKey(const Key('word-double-circle-0')), findsNothing);
+    expect(find.byKey(const Key('print-words-button')), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('word-left-0')));
     await tester.pump();
@@ -272,7 +264,9 @@ void main() {
     expect(textField.style?.fontWeight, FontWeight.normal);
   });
 
-  testWidgets('list view paginates by selected page size', (tester) async {
+  testWidgets('list view shows all selected words in one column', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(800, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -289,52 +283,16 @@ void main() {
           selectedLevels: const ['レベル1'],
           includeShortText: false,
           displayFormat: 'リスト',
-          pageSize: 5,
           enableKanaColor: false,
         ),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('リスト表示'), findsNothing);
+    expect(find.byType(ListView), findsOneWidget);
     expect(find.text('語0'), findsOneWidget);
-    expect(find.text('語4'), findsOneWidget);
-    expect(find.text('語5'), findsNothing);
-    expect(find.text('1 / 2'), findsOneWidget);
-    expect(find.byType(ListView), findsNothing);
-
-    await tester.tap(find.byKey(const Key('display-page-forward')));
-    await tester.pump();
     expect(find.text('語5'), findsOneWidget);
-    expect(find.text('語0'), findsNothing);
-    expect(find.text('2 / 2'), findsOneWidget);
-  });
-
-  testWidgets('five-word pages use double the ten-word font size', (
-    tester,
-  ) async {
-    Future<double?> fontSizeFor(int pageSize) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: WordDisplayPage(
-            wordDataList: [
-              WordData(type: '単語', kana: 'あ', number: 1, level1: 'あか'),
-            ],
-            selectedKanas: const ['あ'],
-            selectedLevels: const ['レベル1'],
-            includeShortText: false,
-            displayFormat: 'リスト',
-            pageSize: pageSize,
-            enableKanaColor: false,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      return tester.widget<Text>(find.text('あか')).style?.fontSize;
-    }
-
-    final five = await fontSizeFor(5);
-    final ten = await fontSizeFor(10);
-    expect(five, (ten ?? 0) * 2);
+    expect(find.text('1 / 2'), findsNothing);
+    expect(find.byKey(const Key('display-page-forward')), findsNothing);
   });
 }

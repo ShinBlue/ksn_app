@@ -2,7 +2,22 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import '../excluded_sounds.dart';
+import '../models/display_item.dart';
 import '../models/word_data.dart';
+import '../utils/kana_highlight.dart';
+import '../utils/word_printer.dart';
+
+/// 表示指定のラベルから番号上限を返す。指定なしは null。
+int? maxNumberForDisplaySpec(String displaySpec) {
+  switch (displaySpec) {
+    case '1〜5':
+      return 5;
+    case '1〜10':
+      return 10;
+    default:
+      return null;
+  }
+}
 
 // 単語表示ページ
 class WordDisplayPage extends StatefulWidget {
@@ -11,7 +26,7 @@ class WordDisplayPage extends StatefulWidget {
   final List<String> selectedLevels;
   final bool includeShortText;
   final String displayFormat;
-  final int pageSize;
+  final String displaySpec;
   final bool enableKanaColor;
   final bool enableBlueFrame;
   final bool enableRedDoubleCircle;
@@ -27,7 +42,7 @@ class WordDisplayPage extends StatefulWidget {
     required this.includeShortText,
     required this.displayFormat,
     required this.enableKanaColor,
-    this.pageSize = 5,
+    this.displaySpec = '指定なし',
     this.enableBlueFrame = true,
     this.enableRedDoubleCircle = true,
     this.enableRandomOrder = false,
@@ -41,12 +56,12 @@ class WordDisplayPage extends StatefulWidget {
 
 class _WordDisplayPageState extends State<WordDisplayPage> {
   int currentIndex = 0;
-  int currentPage = 0;
-  List<String> displayItems = [];
+  List<DisplayItem> displayItems = [];
   final Set<int> _framed = {};
   final Set<int> _circled = {};
 
   static const _sideTapWidth = 56.0;
+  static const _listFontSize = 32.0;
 
   @override
   void initState() {
@@ -55,11 +70,18 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
   }
 
   void _filterAndPrepareData() {
-    final List<String> items = [];
+    final List<DisplayItem> items = [];
+    final maxNumber = maxNumberForDisplaySpec(widget.displaySpec);
 
     for (final wordData in widget.wordDataList) {
       // 選択された音を含むかチェック
       if (!widget.selectedKanas.contains(wordData.kana)) {
+        continue;
+      }
+
+      // 表示指定（No.1〜N）
+      if (maxNumber != null &&
+          (wordData.number < 1 || wordData.number > maxNumber)) {
         continue;
       }
 
@@ -68,7 +90,7 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
         if (widget.includeShortText) {
           // 短文の場合はレベル1の列に入っているデータを表示
           if (wordData.level1 != null && wordData.level1!.isNotEmpty) {
-            _addIfAllowed(items, wordData.level1!);
+            _addIfAllowed(items, wordData.level1!, isShortSentence: true);
           }
         }
         continue;
@@ -79,19 +101,19 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
         // 選択されたレベル1がある場合、レベル1列のデータを追加
         if (widget.selectedLevels.contains('レベル1')) {
           if (wordData.level1 != null && wordData.level1!.isNotEmpty) {
-            _addIfAllowed(items, wordData.level1!);
+            _addIfAllowed(items, wordData.level1!, isShortSentence: false);
           }
         }
         // 選択されたレベル2がある場合、レベル2列のデータを追加
         if (widget.selectedLevels.contains('レベル2')) {
           if (wordData.level2 != null && wordData.level2!.isNotEmpty) {
-            _addIfAllowed(items, wordData.level2!);
+            _addIfAllowed(items, wordData.level2!, isShortSentence: false);
           }
         }
         // 選択されたレベル3がある場合、レベル3列のデータを追加
         if (widget.selectedLevels.contains('レベル3')) {
           if (wordData.level3 != null && wordData.level3!.isNotEmpty) {
-            _addIfAllowed(items, wordData.level3!);
+            _addIfAllowed(items, wordData.level3!, isShortSentence: false);
           }
         }
       }
@@ -104,26 +126,52 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
     setState(() {
       displayItems = items;
       currentIndex = 0;
-      currentPage = 0;
     });
   }
 
-  void _addIfAllowed(List<String> items, String text) {
+  void _addIfAllowed(
+    List<DisplayItem> items,
+    String text, {
+    required bool isShortSentence,
+  }) {
     if (ExcludedSounds.containsAny(text, widget.excludedSounds)) {
       return;
     }
-    items.add(text);
+    items.add(DisplayItem(text: text, isShortSentence: isShortSentence));
   }
 
-  int get _pageCount {
-    if (displayItems.isEmpty) return 1;
-    return ((displayItems.length - 1) ~/ widget.pageSize) + 1;
+  Future<void> _onPrintPressed() async {
+    if (displayItems.isEmpty) return;
+
+    try {
+      await printSelectedWords(
+        displayItems,
+        enableKanaColor: widget.enableKanaColor,
+        selectedKanas: widget.selectedKanas,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('印刷を開始できませんでした: $e')));
+    }
   }
 
-  List<(int, String)> get _currentPageItems {
-    final start = currentPage * widget.pageSize;
-    final end = (start + widget.pageSize).clamp(0, displayItems.length);
-    return [for (var i = start; i < end; i++) (i, displayItems[i])];
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar();
+  }
+
+  Widget? _buildPrintButton() {
+    if (displayItems.isEmpty) return null;
+    return FloatingActionButton(
+      key: const Key('print-words-button'),
+      tooltip: '印刷',
+      backgroundColor: const Color(0xFF1E88E5),
+      foregroundColor: Colors.white,
+      elevation: 4,
+      onPressed: _onPrintPressed,
+      child: const Icon(Icons.print, size: 28),
+    );
   }
 
   void _toggleFrame(int index) {
@@ -150,73 +198,40 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
   Widget build(BuildContext context) {
     if (displayItems.isEmpty) {
       return Scaffold(
-        appBar: AppBar(),
+        appBar: _buildAppBar(),
         body: const Center(child: Text('表示するデータがありません')),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(),
+      appBar: _buildAppBar(),
+      floatingActionButton: _buildPrintButton(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: widget.displayFormat == 'リスト'
           ? _buildListView()
           : _buildSingleView(),
     );
   }
 
-  double get _listFontSize => widget.pageSize == 5 ? 48 : 24;
-
   Widget _buildListView() {
-    final pageItems = _currentPageItems;
-    return Column(
-      children: [
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              if (pageItems.isEmpty) {
-                return const SizedBox.shrink();
-              }
-              final rowHeight = constraints.maxHeight / pageItems.length;
-              return Column(
-                children: [
-                  for (final (index, text) in pageItems)
-                    SizedBox(
-                      height: rowHeight,
-                      width: constraints.maxWidth,
-                      child: Center(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: _buildMarkedItem(
-                              index: index,
-                              text: text,
-                              fontSize: _listFontSize,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      itemCount: displayItems.length,
+      itemBuilder: (context, index) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: _buildMarkedItem(
+                index: index,
+                text: displayItems[index].text,
+                fontSize: _listFontSize,
+              ),
+            ),
           ),
-        ),
-        _buildPageControls(
-          label: '${currentPage + 1} / $_pageCount',
-          canGoBack: currentPage > 0,
-          canGoForward: currentPage < _pageCount - 1,
-          onBack: () {
-            setState(() {
-              currentPage--;
-            });
-          },
-          onForward: () {
-            setState(() {
-              currentPage++;
-            });
-          },
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -227,7 +242,7 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
         children: [
           _buildMarkedItem(
             index: currentIndex,
-            text: displayItems[currentIndex],
+            text: displayItems[currentIndex].text,
             fontSize: 48,
             fontWeight: FontWeight.bold,
           ),
@@ -342,19 +357,6 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
     );
   }
 
-  // カタカナをひらがなに変換（比較用）
-  String _toHiragana(String text) {
-    return String.fromCharCodes(
-      text.runes.map((code) {
-        // カタカナ（ァ〜ヶ）→ ひらがな（ぁ〜ゖ）
-        if (code >= 0x30A1 && code <= 0x30F6) {
-          return code - 0x60;
-        }
-        return code;
-      }),
-    );
-  }
-
   // 選択された音の文字を赤く表示するヘルパーメソッド
   Widget _buildHighlightedText(
     String text, {
@@ -374,56 +376,20 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
       );
     }
 
-    // 選択音をひらがなに正規化（拗音など2文字を先にマッチさせるため長い順）
-    final selectedNormalized = widget.selectedKanas.map(_toHiragana).toList()
-      ..sort((a, b) => b.length.compareTo(a.length));
-
-    final List<TextSpan> spans = [];
-    final runes = text.runes.toList();
-    int i = 0;
-
-    while (i < runes.length) {
-      int matchLength = 0;
-
-      for (final kana in selectedNormalized) {
-        final kanaRunes = kana.runes.toList();
-        if (i + kanaRunes.length > runes.length) continue;
-
-        final slice = String.fromCharCodes(
-          runes.sublist(i, i + kanaRunes.length),
-        );
-        if (_toHiragana(slice) == kana) {
-          matchLength = kanaRunes.length;
-          break;
-        }
-      }
-
-      if (matchLength > 0) {
-        spans.add(
-          TextSpan(
-            text: String.fromCharCodes(runes.sublist(i, i + matchLength)),
-            style: TextStyle(
-              fontSize: fontSize,
-              fontWeight: fontWeight,
-              color: Colors.red,
-            ),
+    final spans = [
+      for (final segment in splitHighlightedSegments(
+        text,
+        widget.selectedKanas,
+      ))
+        TextSpan(
+          text: segment.text,
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: fontWeight,
+            color: segment.highlighted ? Colors.red : Colors.black,
           ),
-        );
-        i += matchLength;
-      } else {
-        spans.add(
-          TextSpan(
-            text: String.fromCharCode(runes[i]),
-            style: TextStyle(
-              fontSize: fontSize,
-              fontWeight: fontWeight,
-              color: Colors.black,
-            ),
-          ),
-        );
-        i++;
-      }
-    }
+        ),
+    ];
 
     return Text.rich(TextSpan(children: spans), textAlign: TextAlign.center);
   }

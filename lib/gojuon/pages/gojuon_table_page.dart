@@ -31,8 +31,8 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
   // 表示形式の選択状態（ラジオボタン）
   String displayFormat = 'リスト';
 
-  // リスト表示の1ページあたりの語数
-  int pageSize = 5;
+  // 表示指定（番号範囲）
+  String displaySpec = '指定なし';
 
   // 選択音カラーのON/OFF状態
   bool enableKanaColor = true;
@@ -821,209 +821,150 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Builder(
-                                        builder: (context) {
-                                          final listMode =
-                                              displayFormat == 'リスト';
-                                          return Column(
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Wrap(
+                                            spacing: 8,
+                                            runSpacing: 4,
                                             crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            mainAxisSize: MainAxisSize.min,
+                                                WrapCrossAlignment.center,
                                             children: [
-                                              Wrap(
-                                                spacing: 8,
-                                                runSpacing: 4,
-                                                crossAxisAlignment:
-                                                    WrapCrossAlignment.center,
-                                                children: [
-                                                  const Text(
-                                                    '表示対象',
-                                                    style: TextStyle(
-                                                      fontSize: 16,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                  for (final target
-                                                      in displayTargets.keys)
-                                                    Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        SizedBox(
-                                                          width: 24,
-                                                          height: 24,
-                                                          child: Checkbox(
-                                                            value:
-                                                                displayTargets[target],
-                                                            onChanged: (value) {
-                                                              setState(() {
-                                                                displayTargets[target] =
-                                                                    value ??
-                                                                    false;
-                                                              });
-                                                            },
-                                                            shape: RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                    4,
-                                                                  ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                        const SizedBox(
-                                                          width: 4,
-                                                        ),
-                                                        Text(
-                                                          target,
-                                                          style:
-                                                              const TextStyle(
-                                                                fontSize: 14,
+                                              const Text(
+                                                '表示対象',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              for (final target
+                                                  in displayTargets.keys)
+                                                Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    SizedBox(
+                                                      width: 24,
+                                                      height: 24,
+                                                      child: Checkbox(
+                                                        value:
+                                                            displayTargets[target],
+                                                        onChanged: (value) {
+                                                          setState(() {
+                                                            displayTargets[target] =
+                                                                value ?? false;
+                                                          });
+                                                        },
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                4,
                                                               ),
                                                         ),
-                                                      ],
+                                                      ),
                                                     ),
-                                                ],
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      target,
+                                                      style: const TextStyle(
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              const SizedBox(width: 12),
+                                              const Text(
+                                                '表示指定',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                               ),
-                                              const SizedBox(height: 12),
-                                              Wrap(
-                                                spacing: 8,
-                                                runSpacing: 4,
-                                                crossAxisAlignment:
-                                                    WrapCrossAlignment.center,
-                                                children: [
-                                                  const Text(
-                                                    '表示形式',
-                                                    style: TextStyle(
-                                                      fontSize: 16,
-                                                      fontWeight:
-                                                          FontWeight.bold,
+                                              for (final spec in [
+                                                '指定なし',
+                                                '1〜5',
+                                                '1〜10',
+                                              ])
+                                                Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    SizedBox(
+                                                      width: 24,
+                                                      height: 24,
+                                                      child: Radio<String>(
+                                                        value: spec,
+                                                        groupValue: displaySpec,
+                                                        onChanged: (value) {
+                                                          setState(() {
+                                                            displaySpec =
+                                                                value ?? '指定なし';
+                                                          });
+                                                        },
+                                                      ),
                                                     ),
-                                                  ),
-                                                  Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      SizedBox(
-                                                        width: 24,
-                                                        height: 24,
-                                                        child: Radio<String>(
-                                                          value: 'リスト',
-                                                          groupValue:
-                                                              displayFormat,
-                                                          onChanged: (value) {
-                                                            setState(() {
-                                                              displayFormat =
-                                                                  value ??
-                                                                  'リスト';
-                                                            });
-                                                          },
-                                                        ),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      spec,
+                                                      style: const TextStyle(
+                                                        fontSize: 14,
                                                       ),
-                                                      const SizedBox(width: 4),
-                                                      const Text(
-                                                        'リスト',
-                                                        style: TextStyle(
-                                                          fontSize: 14,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  Opacity(
-                                                    opacity: listMode
-                                                        ? 1
-                                                        : 0.45,
-                                                    child: Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        const Text(
-                                                          '（',
-                                                          style: TextStyle(
-                                                            fontSize: 14,
-                                                          ),
-                                                        ),
-                                                        for (final size in [
-                                                          5,
-                                                          10,
-                                                        ]) ...[
-                                                          SizedBox(
-                                                            width: 24,
-                                                            height: 24,
-                                                            child: Radio<int>(
-                                                              value: size,
-                                                              groupValue:
-                                                                  pageSize,
-                                                              onChanged:
-                                                                  listMode
-                                                                  ? (value) {
-                                                                      setState(() {
-                                                                        pageSize =
-                                                                            value ??
-                                                                            5;
-                                                                      });
-                                                                    }
-                                                                  : null,
-                                                            ),
-                                                          ),
-                                                          const SizedBox(
-                                                            width: 2,
-                                                          ),
-                                                          Text(
-                                                            '$size語',
-                                                            style:
-                                                                const TextStyle(
-                                                                  fontSize: 14,
-                                                                ),
-                                                          ),
-                                                          if (size == 5)
-                                                            const SizedBox(
-                                                              width: 8,
-                                                            ),
-                                                        ],
-                                                        const Text(
-                                                          '）',
-                                                          style: TextStyle(
-                                                            fontSize: 14,
-                                                          ),
-                                                        ),
-                                                      ],
                                                     ),
-                                                  ),
-                                                  Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      SizedBox(
-                                                        width: 24,
-                                                        height: 24,
-                                                        child: Radio<String>(
-                                                          value: '１つずつ',
-                                                          groupValue:
-                                                              displayFormat,
-                                                          onChanged: (value) {
-                                                            setState(() {
-                                                              displayFormat =
-                                                                  value ??
-                                                                  'リスト';
-                                                            });
-                                                          },
-                                                        ),
-                                                      ),
-                                                      const SizedBox(width: 4),
-                                                      const Text(
-                                                        '１つずつ',
-                                                        style: TextStyle(
-                                                          fontSize: 14,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ],
-                                              ),
+                                                  ],
+                                                ),
                                             ],
-                                          );
-                                        },
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Wrap(
+                                            spacing: 8,
+                                            runSpacing: 4,
+                                            crossAxisAlignment:
+                                                WrapCrossAlignment.center,
+                                            children: [
+                                              const Text(
+                                                '表示形式',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              for (final format in [
+                                                'リスト',
+                                                '１つずつ',
+                                              ])
+                                                Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    SizedBox(
+                                                      width: 24,
+                                                      height: 24,
+                                                      child: Radio<String>(
+                                                        value: format,
+                                                        groupValue:
+                                                            displayFormat,
+                                                        onChanged: (value) {
+                                                          setState(() {
+                                                            displayFormat =
+                                                                value ?? 'リスト';
+                                                          });
+                                                        },
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      format,
+                                                      style: const TextStyle(
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                            ],
+                                          ),
+                                        ],
                                       ),
                                       const SizedBox(height: 12),
                                       Wrap(
@@ -1281,7 +1222,7 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
           selectedLevels: selectedLevels,
           includeShortText: includeShortText,
           displayFormat: displayFormat,
-          pageSize: pageSize,
+          displaySpec: displaySpec,
           enableKanaColor: enableKanaColor,
           enableBlueFrame: enableBlueFrame,
           enableRedDoubleCircle: enableRedDoubleCircle,
