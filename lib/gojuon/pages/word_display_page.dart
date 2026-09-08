@@ -347,7 +347,9 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
               width: _frameToggleSize,
               height: _frameToggleSize,
               decoration: BoxDecoration(
-                color: const Color(0xFFB3E5FC),
+                color: framed
+                    ? const Color(0xFF81D4FA)
+                    : const Color(0xFFB3E5FC),
                 borderRadius: BorderRadius.circular(6),
               ),
             ),
