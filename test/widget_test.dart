@@ -41,16 +41,16 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('ことば表示アプリ'), findsWidgets);
-    expect(find.text('青い枠'), findsOneWidget);
-    expect(find.text('赤い二重丸'), findsOneWidget);
+    expect(find.text('強調枠をつける'), findsOneWidget);
+    expect(find.text('丸をつける'), findsOneWidget);
     expect(find.text('ランダムに並べる'), findsOneWidget);
     expect(find.text('除外する音'), findsOneWidget);
     expect(find.byKey(const Key('exclude-sounds-field')), findsOneWidget);
     expect(find.text('決定'), findsOneWidget);
     expect(find.text('表示指定'), findsOneWidget);
     expect(find.text('指定なし'), findsOneWidget);
-    expect(find.text('1〜5'), findsOneWidget);
-    expect(find.text('1〜10'), findsOneWidget);
+    expect(find.text('No.1〜5'), findsOneWidget);
+    expect(find.text('No.1〜10'), findsOneWidget);
     expect(find.text('5語'), findsNothing);
     expect(find.text('10語'), findsNothing);
   });
@@ -69,7 +69,7 @@ void main() {
           selectedLevels: const ['レベル1'],
           includeShortText: true,
           displayFormat: 'リスト',
-          displaySpec: '1〜5',
+          displaySpec: 'No.1〜5',
           enableKanaColor: false,
         ),
       ),
@@ -97,7 +97,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('青い枠'), findsOneWidget);
+    expect(find.text('強調枠をつける'), findsOneWidget);
     expect(
       find.byWidgetPredicate(
         (widget) =>
@@ -157,7 +157,7 @@ void main() {
     expect(find.byKey(const Key('word-double-circle-0')), findsNothing);
     expect(find.byKey(const Key('print-words-button')), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('word-left-0')));
+    await tester.tap(find.byKey(const Key('word-frame-toggle-0')));
     await tester.pump();
     expect(find.byKey(const Key('word-blue-frame-0')), findsOneWidget);
 

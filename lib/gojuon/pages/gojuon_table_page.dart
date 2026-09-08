@@ -37,10 +37,10 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
   // 選択音カラーのON/OFF状態
   bool enableKanaColor = true;
 
-  // 表示した語の左をクリックして青い枠を付ける
+  // 表示した語に強調枠を付ける
   bool enableBlueFrame = true;
 
-  // 表示した語をクリックして赤い二重丸を付ける
+  // 表示した語をクリックして丸を付ける
   bool enableRedDoubleCircle = true;
 
   // 選択された単語・短文をランダムに並べる
@@ -884,8 +884,8 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
                                               ),
                                               for (final spec in [
                                                 '指定なし',
-                                                '1〜5',
-                                                '1〜10',
+                                                'No.1〜5',
+                                                'No.1〜10',
                                               ])
                                                 Row(
                                                   mainAxisSize:
@@ -983,7 +983,7 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
                                             },
                                           ),
                                           _OptionSwitch(
-                                            label: '青い枠',
+                                            label: '強調枠をつける',
                                             value: enableBlueFrame,
                                             onChanged: (value) {
                                               setState(() {
@@ -992,7 +992,7 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
                                             },
                                           ),
                                           _OptionSwitch(
-                                            label: '赤い二重丸',
+                                            label: '丸をつける',
                                             value: enableRedDoubleCircle,
                                             onChanged: (value) {
                                               setState(() {

@@ -10,9 +10,11 @@ import '../utils/word_printer.dart';
 /// 表示指定のラベルから番号上限を返す。指定なしは null。
 int? maxNumberForDisplaySpec(String displaySpec) {
   switch (displaySpec) {
-    case '1〜5':
+    case 'No.1〜5':
+    case '1〜5': // 旧ラベル互換
       return 5;
-    case '1〜10':
+    case 'No.1〜10':
+    case '1〜10': // 旧ラベル互換
       return 10;
     default:
       return null;
@@ -62,6 +64,7 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
 
   static const _sideTapWidth = 56.0;
   static const _listFontSize = 32.0;
+  static const _frameToggleSize = 28.0;
 
   @override
   void initState() {
@@ -220,15 +223,11 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
       itemBuilder: (context, index) {
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Center(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: _buildMarkedItem(
-                index: index,
-                text: displayItems[index].text,
-                fontSize: _listFontSize,
-              ),
-            ),
+          child: _buildMarkedItem(
+            index: index,
+            text: displayItems[index].text,
+            fontSize: _listFontSize,
+            expandToRow: true,
           ),
         );
       },
@@ -300,59 +299,86 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
     required String text,
     required double fontSize,
     FontWeight? fontWeight,
+    bool expandToRow = false,
   }) {
     final framed = widget.enableBlueFrame && _framed.contains(index);
     final circled = widget.enableRedDoubleCircle && _circled.contains(index);
 
-    // 左側の青枠タップ領域と同じ幅を右にも置き、下の操作ボタンと中央を揃える。
+    final textWidget = GestureDetector(
+      key: Key('word-text-$index'),
+      onTap: widget.enableRedDoubleCircle ? () => _toggleCircle(index) : null,
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            key: framed ? Key('word-blue-frame-$index') : null,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: framed ? Colors.blue : Colors.transparent,
+                width: 3,
+              ),
+            ),
+            child: _buildHighlightedText(
+              text,
+              fontSize: fontSize,
+              fontWeight: fontWeight,
+            ),
+          ),
+          if (circled)
+            IgnorePointer(
+              child: CustomPaint(
+                key: Key('word-double-circle-$index'),
+                size: Size.square(fontSize * 1.55),
+                painter: _RedDoubleCirclePainter(),
+              ),
+            ),
+        ],
+      ),
+    );
+
+    final frameToggle = widget.enableBlueFrame
+        ? GestureDetector(
+            key: Key('word-frame-toggle-$index'),
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _toggleFrame(index),
+            child: Container(
+              width: _frameToggleSize,
+              height: _frameToggleSize,
+              decoration: BoxDecoration(
+                color: const Color(0xFFB3E5FC),
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+          )
+        : SizedBox(width: _frameToggleSize, height: _frameToggleSize);
+
+    if (expandToRow) {
+      return Row(
+        children: [
+          const SizedBox(width: _frameToggleSize),
+          Expanded(
+            child: Center(
+              child: FittedBox(fit: BoxFit.scaleDown, child: textWidget),
+            ),
+          ),
+          frameToggle,
+        ],
+      );
+    }
+
+    // １つずつ表示: 左右の余白で中央揃えしつつ、右端に強調枠トグルを置く
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        GestureDetector(
-          key: Key('word-left-$index'),
-          behavior: HitTestBehavior.opaque,
-          onTap: widget.enableBlueFrame ? () => _toggleFrame(index) : null,
-          child: SizedBox(width: _sideTapWidth, height: fontSize * 1.8),
-        ),
-        GestureDetector(
-          key: Key('word-text-$index'),
-          onTap: widget.enableRedDoubleCircle
-              ? () => _toggleCircle(index)
-              : null,
-          child: Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                key: framed ? Key('word-blue-frame-$index') : null,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: framed ? Colors.blue : Colors.transparent,
-                    width: 3,
-                  ),
-                ),
-                child: _buildHighlightedText(
-                  text,
-                  fontSize: fontSize,
-                  fontWeight: fontWeight,
-                ),
-              ),
-              if (circled)
-                IgnorePointer(
-                  child: CustomPaint(
-                    key: Key('word-double-circle-$index'),
-                    size: Size.square(fontSize * 1.55),
-                    painter: _RedDoubleCirclePainter(),
-                  ),
-                ),
-            ],
-          ),
-        ),
         SizedBox(width: _sideTapWidth, height: fontSize * 1.8),
+        textWidget,
+        SizedBox(
+          width: _sideTapWidth,
+          height: fontSize * 1.8,
+          child: Align(alignment: Alignment.centerRight, child: frameToggle),
+        ),
       ],
     );
   }
