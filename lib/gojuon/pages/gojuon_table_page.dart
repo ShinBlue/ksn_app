@@ -874,7 +874,15 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
                                                     ),
                                                   ],
                                                 ),
-                                              const SizedBox(width: 12),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Wrap(
+                                            spacing: 8,
+                                            runSpacing: 4,
+                                            crossAxisAlignment:
+                                                WrapCrossAlignment.center,
+                                            children: [
                                               const Text(
                                                 '表示指定',
                                                 style: TextStyle(
@@ -914,15 +922,7 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
                                                     ),
                                                   ],
                                                 ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 12),
-                                          Wrap(
-                                            spacing: 8,
-                                            runSpacing: 4,
-                                            crossAxisAlignment:
-                                                WrapCrossAlignment.center,
-                                            children: [
+                                              const SizedBox(width: 12),
                                               const Text(
                                                 '表示形式',
                                                 style: TextStyle(

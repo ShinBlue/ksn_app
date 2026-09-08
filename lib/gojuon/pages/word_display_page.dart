@@ -209,7 +209,7 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
     return Scaffold(
       appBar: _buildAppBar(),
       floatingActionButton: _buildPrintButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
       body: widget.displayFormat == 'リスト'
           ? _buildListView()
           : _buildSingleView(),
