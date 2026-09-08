@@ -805,210 +805,304 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 12,
+                          vertical: 16,
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Expanded(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 4,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: SizedBox(
+                                  width: layoutInfo.containerWidth - 32 - 132,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
                                     crossAxisAlignment:
-                                        WrapCrossAlignment.center,
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      const Text(
-                                        '表示対象',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      for (final target in displayTargets.keys)
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            SizedBox(
-                                              width: 24,
-                                              height: 24,
-                                              child: Checkbox(
-                                                value: displayTargets[target],
-                                                onChanged: (value) {
-                                                  setState(() {
-                                                    displayTargets[target] =
-                                                        value ?? false;
-                                                  });
-                                                },
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(4),
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              target,
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      const SizedBox(width: 12),
-                                      const Text(
-                                        '表示形式',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      for (final format in ['リスト', '１つずつ'])
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            SizedBox(
-                                              width: 24,
-                                              height: 24,
-                                              child: Radio<String>(
-                                                value: format,
-                                                groupValue: displayFormat,
-                                                onChanged: (value) {
-                                                  setState(() {
-                                                    displayFormat =
-                                                        value ?? 'リスト';
-                                                  });
-                                                },
-                                              ),
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              format,
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      if (displayFormat == 'リスト') ...[
-                                        const SizedBox(width: 12),
-                                        const Text(
-                                          '1ページ',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        for (final size in [5, 10])
-                                          Row(
+                                      Builder(
+                                        builder: (context) {
+                                          final listMode =
+                                              displayFormat == 'リスト';
+                                          return Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              SizedBox(
-                                                width: 24,
-                                                height: 24,
-                                                child: Radio<int>(
-                                                  value: size,
-                                                  groupValue: pageSize,
-                                                  onChanged: (value) {
-                                                    setState(() {
-                                                      pageSize = value ?? 5;
-                                                    });
-                                                  },
-                                                ),
+                                              Wrap(
+                                                spacing: 8,
+                                                runSpacing: 4,
+                                                crossAxisAlignment:
+                                                    WrapCrossAlignment.center,
+                                                children: [
+                                                  const Text(
+                                                    '表示対象',
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  for (final target
+                                                      in displayTargets.keys)
+                                                    Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        SizedBox(
+                                                          width: 24,
+                                                          height: 24,
+                                                          child: Checkbox(
+                                                            value:
+                                                                displayTargets[target],
+                                                            onChanged: (value) {
+                                                              setState(() {
+                                                                displayTargets[target] =
+                                                                    value ??
+                                                                    false;
+                                                              });
+                                                            },
+                                                            shape: RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                    4,
+                                                                  ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                          width: 4,
+                                                        ),
+                                                        Text(
+                                                          target,
+                                                          style:
+                                                              const TextStyle(
+                                                                fontSize: 14,
+                                                              ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                ],
                                               ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                '$size語',
-                                                style: const TextStyle(
-                                                  fontSize: 14,
-                                                ),
+                                              const SizedBox(height: 12),
+                                              Wrap(
+                                                spacing: 8,
+                                                runSpacing: 4,
+                                                crossAxisAlignment:
+                                                    WrapCrossAlignment.center,
+                                                children: [
+                                                  const Text(
+                                                    '表示形式',
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      SizedBox(
+                                                        width: 24,
+                                                        height: 24,
+                                                        child: Radio<String>(
+                                                          value: 'リスト',
+                                                          groupValue:
+                                                              displayFormat,
+                                                          onChanged: (value) {
+                                                            setState(() {
+                                                              displayFormat =
+                                                                  value ??
+                                                                  'リスト';
+                                                            });
+                                                          },
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      const Text(
+                                                        'リスト',
+                                                        style: TextStyle(
+                                                          fontSize: 14,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  Opacity(
+                                                    opacity: listMode
+                                                        ? 1
+                                                        : 0.45,
+                                                    child: Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        const Text(
+                                                          '（',
+                                                          style: TextStyle(
+                                                            fontSize: 14,
+                                                          ),
+                                                        ),
+                                                        for (final size in [
+                                                          5,
+                                                          10,
+                                                        ]) ...[
+                                                          SizedBox(
+                                                            width: 24,
+                                                            height: 24,
+                                                            child: Radio<int>(
+                                                              value: size,
+                                                              groupValue:
+                                                                  pageSize,
+                                                              onChanged:
+                                                                  listMode
+                                                                  ? (value) {
+                                                                      setState(() {
+                                                                        pageSize =
+                                                                            value ??
+                                                                            5;
+                                                                      });
+                                                                    }
+                                                                  : null,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(
+                                                            width: 2,
+                                                          ),
+                                                          Text(
+                                                            '$size語',
+                                                            style:
+                                                                const TextStyle(
+                                                                  fontSize: 14,
+                                                                ),
+                                                          ),
+                                                          if (size == 5)
+                                                            const SizedBox(
+                                                              width: 8,
+                                                            ),
+                                                        ],
+                                                        const Text(
+                                                          '）',
+                                                          style: TextStyle(
+                                                            fontSize: 14,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      SizedBox(
+                                                        width: 24,
+                                                        height: 24,
+                                                        child: Radio<String>(
+                                                          value: '１つずつ',
+                                                          groupValue:
+                                                              displayFormat,
+                                                          onChanged: (value) {
+                                                            setState(() {
+                                                              displayFormat =
+                                                                  value ??
+                                                                  'リスト';
+                                                            });
+                                                          },
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      const Text(
+                                                        '１つずつ',
+                                                        style: TextStyle(
+                                                          fontSize: 14,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
                                               ),
                                             ],
-                                          ),
-                                      ],
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Wrap(
-                                    spacing: 28,
-                                    runSpacing: 4,
-                                    crossAxisAlignment:
-                                        WrapCrossAlignment.center,
-                                    children: [
-                                      _OptionSwitch(
-                                        label: '選択音カラー',
-                                        value: enableKanaColor,
-                                        onChanged: (value) {
-                                          setState(() {
-                                            enableKanaColor = value;
-                                          });
+                                          );
                                         },
                                       ),
-                                      _OptionSwitch(
-                                        label: '青い枠',
-                                        value: enableBlueFrame,
-                                        onChanged: (value) {
-                                          setState(() {
-                                            enableBlueFrame = value;
-                                          });
-                                        },
-                                      ),
-                                      _OptionSwitch(
-                                        label: '赤い二重丸',
-                                        value: enableRedDoubleCircle,
-                                        onChanged: (value) {
-                                          setState(() {
-                                            enableRedDoubleCircle = value;
-                                          });
-                                        },
-                                      ),
-                                      _OptionSwitch(
-                                        label: 'ランダムに並べる',
-                                        value: enableRandomOrder,
-                                        onChanged: (value) {
-                                          setState(() {
-                                            enableRandomOrder = value;
-                                          });
-                                        },
-                                      ),
-                                      Column(
-                                        mainAxisSize: MainAxisSize.min,
+                                      const SizedBox(height: 12),
+                                      Wrap(
+                                        spacing: 28,
+                                        runSpacing: 8,
                                         crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                            WrapCrossAlignment.center,
                                         children: [
-                                          const Text(
-                                            '除外する音',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                          _OptionSwitch(
+                                            label: '選択音カラー',
+                                            value: enableKanaColor,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                enableKanaColor = value;
+                                              });
+                                            },
                                           ),
-                                          const SizedBox(height: 4),
-                                          Row(
+                                          _OptionSwitch(
+                                            label: '青い枠',
+                                            value: enableBlueFrame,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                enableBlueFrame = value;
+                                              });
+                                            },
+                                          ),
+                                          _OptionSwitch(
+                                            label: '赤い二重丸',
+                                            value: enableRedDoubleCircle,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                enableRedDoubleCircle = value;
+                                              });
+                                            },
+                                          ),
+                                          _OptionSwitch(
+                                            label: 'ランダムに並べる',
+                                            value: enableRandomOrder,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                enableRandomOrder = value;
+                                              });
+                                            },
+                                          ),
+                                          Column(
                                             mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
-                                              SizedBox(
-                                                width: 160,
-                                                child: TextField(
-                                                  key: const Key(
-                                                    'exclude-sounds-field',
-                                                  ),
-                                                  controller:
-                                                      _excludeController,
-                                                  focusNode: _excludeFocus,
-                                                  readOnly: _excludeConfirmed,
-                                                  onTap: _onExcludeFieldTap,
-                                                  style: TextStyle(
-                                                    fontWeight:
-                                                        _excludeConfirmed
-                                                        ? FontWeight.bold
-                                                        : FontWeight.normal,
-                                                  ),
-                                                  decoration:
-                                                      const InputDecoration(
+                                              const Text(
+                                                '除外する音',
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  SizedBox(
+                                                    width: 160,
+                                                    child: TextField(
+                                                      key: const Key(
+                                                        'exclude-sounds-field',
+                                                      ),
+                                                      controller:
+                                                          _excludeController,
+                                                      focusNode: _excludeFocus,
+                                                      readOnly:
+                                                          _excludeConfirmed,
+                                                      onTap: _onExcludeFieldTap,
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            _excludeConfirmed
+                                                            ? FontWeight.bold
+                                                            : FontWeight.normal,
+                                                      ),
+                                                      decoration: const InputDecoration(
                                                         hintText: '例: きくけ　きゃ',
                                                         isDense: true,
                                                         border:
@@ -1019,25 +1113,27 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
                                                               vertical: 8,
                                                             ),
                                                       ),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              SizedBox(
-                                                height: 36,
-                                                child: FilledButton(
-                                                  key: const Key(
-                                                    'exclude-sounds-confirm',
+                                                    ),
                                                   ),
-                                                  onPressed:
-                                                      _confirmExcludedSounds,
-                                                  style: FilledButton.styleFrom(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 12,
-                                                        ),
+                                                  const SizedBox(width: 8),
+                                                  SizedBox(
+                                                    height: 36,
+                                                    child: FilledButton(
+                                                      key: const Key(
+                                                        'exclude-sounds-confirm',
+                                                      ),
+                                                      onPressed:
+                                                          _confirmExcludedSounds,
+                                                      style: FilledButton.styleFrom(
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 12,
+                                                            ),
+                                                      ),
+                                                      child: const Text('決定'),
+                                                    ),
                                                   ),
-                                                  child: const Text('決定'),
-                                                ),
+                                                ],
                                               ),
                                             ],
                                           ),
@@ -1045,7 +1141,7 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
                                       ),
                                     ],
                                   ),
-                                ],
+                                ),
                               ),
                             ),
                             const SizedBox(width: 12),

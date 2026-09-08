@@ -18,7 +18,7 @@ class LayoutCalculator {
   static const double containerPadding = 32.0; // top 16 + bottom 16
   static const double containerSpacing = 16.0;
   static const double topContainerHeightRatio = 10.0;
-  static const double bottomContainerHeightRatio = 2.55;
+  static const double bottomContainerHeightRatio = 3.4;
   static const double minScale = 0.5;
   static const double maxScale = 1.0;
   static const double screenPadding = 32.0; // 左右のパディング
@@ -109,12 +109,9 @@ class LayoutCalculator {
     final bottomPadding = mediaQuery.padding.bottom;
 
     final width = availableWidth ?? calculateAvailableWidth(screenWidth);
-    final height = availableHeight ??
-        calculateAvailableHeight(
-          screenHeight,
-          topPadding,
-          bottomPadding,
-        );
+    final height =
+        availableHeight ??
+        calculateAvailableHeight(screenHeight, topPadding, bottomPadding);
 
     final contentWidth = calculateContentWidth(totalCellCount);
     final containerWidth = calculateContainerWidth(contentWidth);

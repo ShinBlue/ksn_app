@@ -49,6 +49,48 @@ void main() {
     expect(find.text('決定'), findsOneWidget);
     expect(find.text('5語'), findsOneWidget);
     expect(find.text('10語'), findsOneWidget);
+    expect(find.text('（'), findsOneWidget);
+  });
+
+  testWidgets('page size is disabled when one-by-one format is selected', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(routes: AppRoutes.table, initialRoute: AppRoutes.gojuon),
+    );
+    await tester.pumpAndSettle();
+
+    final oneByOne = find
+        .ancestor(of: find.text('１つずつ'), matching: find.byType(Row))
+        .first;
+    await tester.tap(
+      find.descendant(of: oneByOne, matching: find.byType(Radio<String>)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('5語'), findsOneWidget);
+    expect(find.text('10語'), findsOneWidget);
+    expect(find.text('（'), findsOneWidget);
+    expect(find.text('）'), findsOneWidget);
+    final pageSizeRadios = tester
+        .widgetList<Radio<int>>(find.byType(Radio<int>))
+        .toList();
+    expect(pageSizeRadios, hasLength(2));
+    expect(pageSizeRadios.every((radio) => radio.onChanged == null), isTrue);
+    expect(
+      find.ancestor(
+        of: find.text('5語'),
+        matching: find.byWidgetPredicate(
+          (widget) => widget is Opacity && widget.opacity < 1,
+        ),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('gojuon settings does not use vertical scroll in landscape', (
