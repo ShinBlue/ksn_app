@@ -57,9 +57,11 @@ void main() {
     expect(loaded.last.type, '短文');
   });
 
-  test('word list source has no remote URI until a sheet id is set', () {
-    expect(WordListSource.spreadsheetId, isEmpty);
-    expect(WordListSource.csvUri, isNull);
+  test('word list source builds a gviz csv URI when a sheet id is set', () {
+    expect(WordListSource.spreadsheetId, isNotEmpty);
+    expect(WordListSource.csvUri, isNotNull);
+    expect(WordListSource.csvUri!.path, contains('/gviz/tq'));
+    expect(WordListSource.csvUri!.queryParameters['tqx'], 'out:csv');
   });
 
   test('word list source builds a gviz csv URI', () {

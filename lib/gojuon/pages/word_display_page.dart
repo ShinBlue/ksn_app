@@ -11,6 +11,7 @@ class WordDisplayPage extends StatefulWidget {
   final List<String> selectedLevels;
   final bool includeShortText;
   final String displayFormat;
+  final int pageSize;
   final bool enableKanaColor;
   final bool enableBlueFrame;
   final bool enableRedDoubleCircle;
@@ -26,6 +27,7 @@ class WordDisplayPage extends StatefulWidget {
     required this.includeShortText,
     required this.displayFormat,
     required this.enableKanaColor,
+    this.pageSize = 5,
     this.enableBlueFrame = true,
     this.enableRedDoubleCircle = true,
     this.enableRandomOrder = false,
@@ -39,9 +41,12 @@ class WordDisplayPage extends StatefulWidget {
 
 class _WordDisplayPageState extends State<WordDisplayPage> {
   int currentIndex = 0;
+  int currentPage = 0;
   List<String> displayItems = [];
   final Set<int> _framed = {};
   final Set<int> _circled = {};
+
+  static const _sideTapWidth = 56.0;
 
   @override
   void initState() {
@@ -99,6 +104,7 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
     setState(() {
       displayItems = items;
       currentIndex = 0;
+      currentPage = 0;
     });
   }
 
@@ -107,6 +113,17 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
       return;
     }
     items.add(text);
+  }
+
+  int get _pageCount {
+    if (displayItems.isEmpty) return 1;
+    return ((displayItems.length - 1) ~/ widget.pageSize) + 1;
+  }
+
+  List<(int, String)> get _currentPageItems {
+    final start = currentPage * widget.pageSize;
+    final end = (start + widget.pageSize).clamp(0, displayItems.length);
+    return [for (var i = start; i < end; i++) (i, displayItems[i])];
   }
 
   void _toggleFrame(int index) {
@@ -133,37 +150,73 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
   Widget build(BuildContext context) {
     if (displayItems.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('リスト表示')),
+        appBar: AppBar(),
         body: const Center(child: Text('表示するデータがありません')),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('リスト表示')),
+      appBar: AppBar(),
       body: widget.displayFormat == 'リスト'
           ? _buildListView()
           : _buildSingleView(),
     );
   }
 
+  double get _listFontSize => widget.pageSize == 5 ? 48 : 24;
+
   Widget _buildListView() {
-    return Center(
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: displayItems.length,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Center(
-              child: _buildMarkedItem(
-                index: index,
-                text: displayItems[index],
-                fontSize: 24,
-              ),
-            ),
-          );
-        },
-      ),
+    final pageItems = _currentPageItems;
+    return Column(
+      children: [
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              if (pageItems.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              final rowHeight = constraints.maxHeight / pageItems.length;
+              return Column(
+                children: [
+                  for (final (index, text) in pageItems)
+                    SizedBox(
+                      height: rowHeight,
+                      width: constraints.maxWidth,
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: _buildMarkedItem(
+                              index: index,
+                              text: text,
+                              fontSize: _listFontSize,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ),
+        _buildPageControls(
+          label: '${currentPage + 1} / $_pageCount',
+          canGoBack: currentPage > 0,
+          canGoForward: currentPage < _pageCount - 1,
+          onBack: () {
+            setState(() {
+              currentPage--;
+            });
+          },
+          onForward: () {
+            setState(() {
+              currentPage++;
+            });
+          },
+        ),
+      ],
     );
   }
 
@@ -179,34 +232,48 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
             fontWeight: FontWeight.bold,
           ),
           const SizedBox(height: 32),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: currentIndex > 0
-                    ? () {
-                        setState(() {
-                          currentIndex--;
-                        });
-                      }
-                    : null,
-              ),
-              Text(
-                '${currentIndex + 1} / ${displayItems.length}',
-                style: const TextStyle(fontSize: 18),
-              ),
-              IconButton(
-                icon: const Icon(Icons.arrow_forward),
-                onPressed: currentIndex < displayItems.length - 1
-                    ? () {
-                        setState(() {
-                          currentIndex++;
-                        });
-                      }
-                    : null,
-              ),
-            ],
+          _buildPageControls(
+            label: '${currentIndex + 1} / ${displayItems.length}',
+            canGoBack: currentIndex > 0,
+            canGoForward: currentIndex < displayItems.length - 1,
+            onBack: () {
+              setState(() {
+                currentIndex--;
+              });
+            },
+            onForward: () {
+              setState(() {
+                currentIndex++;
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPageControls({
+    required String label,
+    required bool canGoBack,
+    required bool canGoForward,
+    required VoidCallback onBack,
+    required VoidCallback onForward,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            key: const Key('display-page-back'),
+            icon: const Icon(Icons.arrow_back),
+            onPressed: canGoBack ? onBack : null,
+          ),
+          Text(label, style: const TextStyle(fontSize: 18)),
+          IconButton(
+            key: const Key('display-page-forward'),
+            icon: const Icon(Icons.arrow_forward),
+            onPressed: canGoForward ? onForward : null,
           ),
         ],
       ),
@@ -222,6 +289,7 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
     final framed = widget.enableBlueFrame && _framed.contains(index);
     final circled = widget.enableRedDoubleCircle && _circled.contains(index);
 
+    // 左側の青枠タップ領域と同じ幅を右にも置き、下の操作ボタンと中央を揃える。
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -229,7 +297,7 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
           key: Key('word-left-$index'),
           behavior: HitTestBehavior.opaque,
           onTap: widget.enableBlueFrame ? () => _toggleFrame(index) : null,
-          child: SizedBox(width: 56, height: fontSize * 1.8),
+          child: SizedBox(width: _sideTapWidth, height: fontSize * 1.8),
         ),
         GestureDetector(
           key: Key('word-text-$index'),
@@ -269,6 +337,7 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
             ],
           ),
         ),
+        SizedBox(width: _sideTapWidth, height: fontSize * 1.8),
       ],
     );
   }

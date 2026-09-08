@@ -31,6 +31,9 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
   // 表示形式の選択状態（ラジオボタン）
   String displayFormat = 'リスト';
 
+  // リスト表示の1ページあたりの語数
+  int pageSize = 5;
+
   // 選択音カラーのON/OFF状態
   bool enableKanaColor = true;
 
@@ -890,6 +893,42 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
                                             ),
                                           ],
                                         ),
+                                      if (displayFormat == 'リスト') ...[
+                                        const SizedBox(width: 12),
+                                        const Text(
+                                          '1ページ',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        for (final size in [5, 10])
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              SizedBox(
+                                                width: 24,
+                                                height: 24,
+                                                child: Radio<int>(
+                                                  value: size,
+                                                  groupValue: pageSize,
+                                                  onChanged: (value) {
+                                                    setState(() {
+                                                      pageSize = value ?? 5;
+                                                    });
+                                                  },
+                                                ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                '$size語',
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                      ],
                                     ],
                                   ),
                                   const SizedBox(height: 8),
@@ -1146,6 +1185,7 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
           selectedLevels: selectedLevels,
           includeShortText: includeShortText,
           displayFormat: displayFormat,
+          pageSize: pageSize,
           enableKanaColor: enableKanaColor,
           enableBlueFrame: enableBlueFrame,
           enableRedDoubleCircle: enableRedDoubleCircle,
