@@ -55,34 +55,86 @@ void main() {
     expect(find.text('10語'), findsNothing);
   });
 
-  testWidgets('display spec limits words by number range', (tester) async {
+  testWidgets('display spec limits to five items per kana after exclusions', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: WordDisplayPage(
           wordDataList: [
             for (var i = 1; i <= 8; i++)
               WordData(type: '単語', kana: 'あ', number: i, level1: '語$i'),
-            WordData(type: '短文', kana: 'あ', number: 3, level1: '短文3'),
-            WordData(type: '短文', kana: 'あ', number: 7, level1: '短文7'),
           ],
           selectedKanas: const ['あ'],
           selectedLevels: const ['レベル1'],
-          includeShortText: true,
+          includeShortText: false,
           displayFormat: 'リスト',
           displaySpec: 'No.1〜5',
           enableKanaColor: false,
+          // 語2・語4 を除外しても、その音の後ろから補って5件にする
+          excludedSounds: const ['2', '4'],
         ),
       ),
     );
     await tester.pumpAndSettle();
 
     expect(find.text('語1'), findsOneWidget);
+    expect(find.text('語2'), findsNothing);
+    expect(find.text('語3'), findsOneWidget);
+    expect(find.text('語4'), findsNothing);
     expect(find.text('語5'), findsOneWidget);
-    expect(find.text('短文3'), findsOneWidget);
-    expect(find.text('語6'), findsNothing);
-    expect(find.text('短文7'), findsNothing);
-    expect(find.byType(ListView), findsOneWidget);
+    expect(find.text('語6'), findsOneWidget);
+    expect(find.text('語7'), findsOneWidget);
+    expect(find.text('語8'), findsNothing);
   });
+
+  testWidgets(
+    'display spec takes five items for each remaining kana after exclusion',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 5000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: WordDisplayPage(
+            wordDataList: [
+              for (final kana in ['あ', 'い', 'う', 'え', 'お'])
+                for (var i = 1; i <= 8; i++)
+                  WordData(
+                    type: '単語',
+                    kana: kana,
+                    number: i,
+                    level1: '$kana$i',
+                  ),
+            ],
+            selectedKanas: const ['あ', 'い', 'う', 'え', 'お'],
+            selectedLevels: const ['レベル1'],
+            includeShortText: false,
+            displayFormat: 'リスト',
+            displaySpec: 'No.1〜5',
+            enableKanaColor: false,
+            excludedSounds: const ['あ'],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // あ行は除外音で全滅し、い・う・え・おが各5語
+      for (final kana in ['あ']) {
+        for (var i = 1; i <= 8; i++) {
+          expect(find.text('$kana$i'), findsNothing);
+        }
+      }
+      for (final kana in ['い', 'う', 'え', 'お']) {
+        for (var i = 1; i <= 5; i++) {
+          expect(find.text('$kana$i'), findsOneWidget);
+        }
+        expect(find.text('${kana}6'), findsNothing);
+      }
+    },
+  );
 
   testWidgets('gojuon settings does not use vertical scroll in landscape', (
     tester,
@@ -233,7 +285,7 @@ void main() {
     expect(find.text('ドアを あける'), findsNothing);
   });
 
-  testWidgets('confirm keeps only meaningful excluded sounds', (tester) async {
+  testWidgets('confirm locks field and clear restores input', (tester) async {
     tester.view.physicalSize = const Size(1280, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -244,24 +296,29 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.enterText(
-      find.byKey(const Key('exclude-sounds-field')),
-      'きabcく、！きゃ',
-    );
+    final field = find.byKey(const Key('exclude-sounds-field'));
+    await tester.enterText(find.byType(TextField).first, 'きabcく、！きゃ');
     await tester.tap(find.byKey(const Key('exclude-sounds-confirm')));
     await tester.pump();
 
-    final field = find.byKey(const Key('exclude-sounds-field'));
-    var textField = tester.widget<TextField>(field);
-    expect(textField.controller?.text, 'き く きゃ');
-    expect(textField.style?.fontWeight, FontWeight.bold);
+    expect(find.text('き く きゃ'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text('クリア'), findsOneWidget);
+    expect(find.byKey(const Key('exclude-sounds-clear')), findsOneWidget);
 
-    await tester.tap(field);
+    await tester.tap(find.byKey(const Key('exclude-sounds-clear')));
     await tester.pump();
 
-    textField = tester.widget<TextField>(field);
-    expect(textField.controller?.text, isEmpty);
-    expect(textField.style?.fontWeight, FontWeight.normal);
+    expect(find.byType(TextField), findsOneWidget);
+    expect(tester.widget<TextField>(find.byType(TextField)).controller?.text, isEmpty);
+    expect(find.text('決定'), findsOneWidget);
+    expect(find.byKey(const Key('exclude-sounds-confirm')), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'さしす');
+    await tester.tap(find.byKey(const Key('exclude-sounds-confirm')));
+    await tester.pump();
+    expect(find.text('さ し す'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
   });
 
   testWidgets('list view shows all selected words in one column', (

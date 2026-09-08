@@ -7,8 +7,9 @@ import '../models/word_data.dart';
 import '../utils/kana_highlight.dart';
 import '../utils/word_printer.dart';
 
-/// 表示指定のラベルから番号上限を返す。指定なしは null。
-int? maxNumberForDisplaySpec(String displaySpec) {
+/// 表示指定のラベルから、音ごとの件数上限を返す。指定なしは null。
+/// 除外音で落ちた分は、その音の後ろの候補から補う。
+int? itemLimitForDisplaySpec(String displaySpec) {
   switch (displaySpec) {
     case 'No.1〜5':
     case '1〜5': // 旧ラベル互換
@@ -74,51 +75,67 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
 
   void _filterAndPrepareData() {
     final List<DisplayItem> items = [];
-    final maxNumber = maxNumberForDisplaySpec(widget.displaySpec);
+    final itemLimit = itemLimitForDisplaySpec(widget.displaySpec);
 
-    for (final wordData in widget.wordDataList) {
-      // 選択された音を含むかチェック
-      if (!widget.selectedKanas.contains(wordData.kana)) {
-        continue;
+    // 選択した音ごとに候補を集め、表示指定があれば音ごとに先頭 N 件を取る
+    for (final kana in widget.selectedKanas) {
+      final kanaItems = <DisplayItem>[];
+
+      for (final wordData in widget.wordDataList) {
+        if (wordData.kana != kana) {
+          continue;
+        }
+
+        // 種類が「短文」の場合：レベル1の列に含まれているデータを表示
+        if (wordData.type == '短文') {
+          if (widget.includeShortText) {
+            if (wordData.level1 != null && wordData.level1!.isNotEmpty) {
+              _addIfAllowed(
+                kanaItems,
+                wordData.level1!,
+                isShortSentence: true,
+              );
+            }
+          }
+          continue;
+        }
+
+        // 種類が「単語」の場合：選択されたレベル（レベル1〜3）に対応する列のデータを表示
+        if (wordData.type == '単語') {
+          if (widget.selectedLevels.contains('レベル1')) {
+            if (wordData.level1 != null && wordData.level1!.isNotEmpty) {
+              _addIfAllowed(
+                kanaItems,
+                wordData.level1!,
+                isShortSentence: false,
+              );
+            }
+          }
+          if (widget.selectedLevels.contains('レベル2')) {
+            if (wordData.level2 != null && wordData.level2!.isNotEmpty) {
+              _addIfAllowed(
+                kanaItems,
+                wordData.level2!,
+                isShortSentence: false,
+              );
+            }
+          }
+          if (widget.selectedLevels.contains('レベル3')) {
+            if (wordData.level3 != null && wordData.level3!.isNotEmpty) {
+              _addIfAllowed(
+                kanaItems,
+                wordData.level3!,
+                isShortSentence: false,
+              );
+            }
+          }
+        }
       }
 
-      // 表示指定（No.1〜N）
-      if (maxNumber != null &&
-          (wordData.number < 1 || wordData.number > maxNumber)) {
-        continue;
-      }
-
-      // 種類が「短文」の場合：レベル1の列に含まれているデータを表示
-      if (wordData.type == '短文') {
-        if (widget.includeShortText) {
-          // 短文の場合はレベル1の列に入っているデータを表示
-          if (wordData.level1 != null && wordData.level1!.isNotEmpty) {
-            _addIfAllowed(items, wordData.level1!, isShortSentence: true);
-          }
-        }
-        continue;
-      }
-
-      // 種類が「単語」の場合：選択されたレベル（レベル1〜3）に対応する列のデータを表示
-      if (wordData.type == '単語') {
-        // 選択されたレベル1がある場合、レベル1列のデータを追加
-        if (widget.selectedLevels.contains('レベル1')) {
-          if (wordData.level1 != null && wordData.level1!.isNotEmpty) {
-            _addIfAllowed(items, wordData.level1!, isShortSentence: false);
-          }
-        }
-        // 選択されたレベル2がある場合、レベル2列のデータを追加
-        if (widget.selectedLevels.contains('レベル2')) {
-          if (wordData.level2 != null && wordData.level2!.isNotEmpty) {
-            _addIfAllowed(items, wordData.level2!, isShortSentence: false);
-          }
-        }
-        // 選択されたレベル3がある場合、レベル3列のデータを追加
-        if (widget.selectedLevels.contains('レベル3')) {
-          if (wordData.level3 != null && wordData.level3!.isNotEmpty) {
-            _addIfAllowed(items, wordData.level3!, isShortSentence: false);
-          }
-        }
+      if (itemLimit == null) {
+        items.addAll(kanaItems);
+      } else {
+        items.addAll(kanaItems.take(itemLimit));
       }
     }
 
