@@ -119,6 +119,7 @@ class KarutaSelectionScreen extends StatefulWidget {
 const kKarutaValidCardCounts = [4, 8, 12, 16, 20];
 
 class _KarutaSelectionScreenState extends State<KarutaSelectionScreen> {
+  final _navigatorKey = GlobalKey<NavigatorState>();
   final _selected = <String>{};
   int? _targetCount;
   KarutaLayoutMode _layoutMode = KarutaLayoutMode.aligned;
@@ -237,121 +238,162 @@ class _KarutaSelectionScreenState extends State<KarutaSelectionScreen> {
         'layout_mode': _layoutMode.name,
       },
     );
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        settings: const RouteSettings(name: '/karuta/game'),
-        builder: (_) => KarutaGameScreen(
-          selectedCharacters: _selected.toList(),
-          layoutMode: _layoutMode,
-        ),
-      ),
+    _navigatorKey.currentState?.pushNamed(
+      '/karuta/game',
+      arguments: <String, Object?>{
+        'characters': _selected.toList(),
+        'layoutMode': _layoutMode,
+      },
     );
+  }
+
+  /// カルタの戻るは、ゲーム／選択どちらからも教材サイトへ出す。
+  void _onKarutaBack() {
+    KyozaiExit.leave();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ExitToKyozaiScope(
-      child: Scaffold(
-        backgroundColor: const Color(0xFFFFFBFE),
-        appBar: AppBar(
-          leading: const ExitToKyozaiButton(),
-          title: const Text('カルタ'),
-          backgroundColor: const Color(0xFFFFF3E0),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          _onKarutaBack();
+        }
+      },
+      child: Navigator(
+        key: _navigatorKey,
+        onGenerateRoute: (settings) {
+          if (settings.name == '/karuta/game') {
+            final args =
+                settings.arguments as Map<String, Object?>? ?? const {};
+            final characters =
+                (args['characters'] as List<String>?) ?? const <String>[];
+            final layoutMode =
+                (args['layoutMode'] as KarutaLayoutMode?) ??
+                KarutaLayoutMode.aligned;
+            return MaterialPageRoute<void>(
+              settings: settings,
+              builder: (_) => KarutaGameScreen(
+                selectedCharacters: characters,
+                layoutMode: layoutMode,
+                onBack: _onKarutaBack,
+              ),
+            );
+          }
+
+          return MaterialPageRoute<void>(
+            settings: settings,
+            builder: (_) => _buildSelectionScaffold(),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSelectionScaffold() {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFFFBFE),
+      appBar: AppBar(
+        leading: IconButton(
+          key: const Key('karuta-selection-back'),
+          icon: const BackButtonIcon(),
+          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+          onPressed: _onKarutaBack,
         ),
-        body: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-            ? Center(child: Text(_error!))
-            : LayoutBuilder(
-                builder: (context, constraints) {
-                  final compact = AppLayout.isCompact(context);
-                  const horizontalPadding = 8.0;
-                  const columnGap = 6.0;
+        title: const Text('カルタ'),
+        backgroundColor: const Color(0xFFFFF3E0),
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+          ? Center(child: Text(_error!))
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = AppLayout.isCompact(context);
+                const horizontalPadding = 8.0;
+                const columnGap = 6.0;
 
-                  if (compact) {
-                    final tableWidth =
-                        constraints.maxWidth - horizontalPadding * 2;
-                    final tableHeight = constraints.maxHeight * 0.58;
-                    final metrics = KarutaSelectionMetrics.fit(
-                      tableWidth: tableWidth,
-                      tableHeight: tableHeight,
-                    );
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: horizontalPadding,
-                        vertical: 4,
-                      ),
-                      child: Column(
-                        children: [
-                          Expanded(
-                            child: _buildKarutaTableArea(metrics: metrics),
-                          ),
-                          const SizedBox(height: 8),
-                          SizedBox(
-                            height: (constraints.maxHeight * 0.34).clamp(
-                              160.0,
-                              280.0,
-                            ),
-                            child: SingleChildScrollView(
-                              child: _SelectionSidePanel(
-                                selectedCount: _selected.length,
-                                targetCount: _targetCount,
-                                layoutMode: _layoutMode,
-                                onLayoutModeChanged: (mode) =>
-                                    setState(() => _layoutMode = mode),
-                                onStart: _startGame,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  final sidePanelWidth = (constraints.maxWidth * 0.24).clamp(
-                    120.0,
-                    160.0,
-                  );
+                if (compact) {
                   final tableWidth =
-                      constraints.maxWidth -
-                      sidePanelWidth -
-                      horizontalPadding * 2 -
-                      columnGap;
+                      constraints.maxWidth - horizontalPadding * 2;
+                  final tableHeight = constraints.maxHeight * 0.58;
                   final metrics = KarutaSelectionMetrics.fit(
                     tableWidth: tableWidth,
-                    tableHeight: constraints.maxHeight,
+                    tableHeight: tableHeight,
                   );
-
                   return Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: horizontalPadding,
                       vertical: 4,
                     ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                    child: Column(
                       children: [
                         Expanded(
                           child: _buildKarutaTableArea(metrics: metrics),
                         ),
-                        const SizedBox(width: columnGap),
+                        const SizedBox(height: 8),
                         SizedBox(
-                          width: sidePanelWidth,
-                          child: _SelectionSidePanel(
-                            selectedCount: _selected.length,
-                            targetCount: _targetCount,
-                            layoutMode: _layoutMode,
-                            onLayoutModeChanged: (mode) =>
-                                setState(() => _layoutMode = mode),
-                            onStart: _startGame,
+                          height: (constraints.maxHeight * 0.34).clamp(
+                            160.0,
+                            280.0,
+                          ),
+                          child: SingleChildScrollView(
+                            child: _SelectionSidePanel(
+                              selectedCount: _selected.length,
+                              targetCount: _targetCount,
+                              layoutMode: _layoutMode,
+                              onLayoutModeChanged: (mode) =>
+                                  setState(() => _layoutMode = mode),
+                              onStart: _startGame,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   );
-                },
-              ),
-      ),
+                }
+
+                final sidePanelWidth = (constraints.maxWidth * 0.24).clamp(
+                  120.0,
+                  160.0,
+                );
+                final tableWidth =
+                    constraints.maxWidth -
+                    sidePanelWidth -
+                    horizontalPadding * 2 -
+                    columnGap;
+                final metrics = KarutaSelectionMetrics.fit(
+                  tableWidth: tableWidth,
+                  tableHeight: constraints.maxHeight,
+                );
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: horizontalPadding,
+                    vertical: 4,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(child: _buildKarutaTableArea(metrics: metrics)),
+                      const SizedBox(width: columnGap),
+                      SizedBox(
+                        width: sidePanelWidth,
+                        child: _SelectionSidePanel(
+                          selectedCount: _selected.length,
+                          targetCount: _targetCount,
+                          layoutMode: _layoutMode,
+                          onLayoutModeChanged: (mode) =>
+                              setState(() => _layoutMode = mode),
+                          onStart: _startGame,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
     );
   }
 
