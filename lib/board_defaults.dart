@@ -20,7 +20,7 @@ class BoardDefaults {
     Color(0xFFFFEB3B),
     Color(0xFF7B1FA2),
     Color(0xFFFFFFFF),
-    Color(0xFFCE93D8),
+    Color(0xFFCDB7F6), // 薄紫（初期盤面）
     Color(0xFFF44336),
     Color(0xFFFF9800),
     Color(0xFF388E3C),
@@ -33,12 +33,12 @@ class BoardDefaults {
     Color(0xFFFFEB3B),
     Color(0xFF7B1FA2),
     Color(0xFFFFFFFF),
-    Color(0xFFCE93D8),
+    Color(0xFFCDB7F6), // 薄紫
     Color(0xFFF44336),
     Color(0xFFFF9800),
     Color(0xFF388E3C),
-    Color(0xFFE91E63),
-    Color(0xFF00BCD4),
+    Color(0xFFEFB3E1), // 濃いピンク
+    Color(0xFF1A4FFF), // 青
     Color(0xFF795548),
     Color(0xFF607D8B),
     Color(0xFF000000),
