@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ksn_app/app_routes.dart';
 import 'package:ksn_app/gojuon/models/word_data.dart';
 import 'package:ksn_app/gojuon/pages/word_display_page.dart';
+import 'package:ksn_app/karuta/karuta_game_screen.dart';
 import 'package:ksn_app/main.dart';
 
 void main() {
@@ -16,6 +17,35 @@ void main() {
     expect(AppRoutes.normalize('/gojuon'), AppRoutes.gojuon);
     expect(AppRoutes.normalize('/unknown'), AppRoutes.home);
   });
+
+  test(
+    'yomifuda splits by bunsetsu into two columns and keeps chouon glyph',
+    () {
+      expect(verticalYomifudaChars('たったらたー'), ['た', 'っ', 'た', 'ら', 'た', 'ー']);
+      expect(verticalYomifudaChars('たｰ'), ['た', 'ー']);
+      expect(columnCharsFromPhrases(['ありさん', 'あいさつ']), [
+        'あ',
+        'り',
+        'さ',
+        'ん',
+        '',
+        'あ',
+        'い',
+        'さ',
+        'つ',
+      ]);
+
+      final columns = splitYomifudaIntoTwoColumns('ありさん あいさつ あさがきた');
+      final left = columns[0].where((c) => c.isNotEmpty).join();
+      final right = columns[1].where((c) => c.isNotEmpty).join();
+      // 文節をまたいで割れないこと
+      expect('$right$left', 'ありさんあいさつあさがきた');
+      expect(right, anyOf('ありさん', 'ありさんあいさつ'));
+      expect(left.isNotEmpty, isTrue);
+      // 同一列内の文節間にスペースが入ること
+      expect(columns[0].contains('') || columns[1].contains(''), isTrue);
+    },
+  );
 
   testWidgets('home route shows the main menu', (tester) async {
     tester.view.physicalSize = const Size(1280, 900);
@@ -342,6 +372,52 @@ void main() {
     await tester.pump();
     expect(find.text('さ し す'), findsOneWidget);
     expect(find.byType(TextField), findsNothing);
+  });
+
+  testWidgets('karuta game screen shows back control', (tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(routes: AppRoutes.table, initialRoute: AppRoutes.karuta),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('4まい'), findsOneWidget);
+    await tester.tap(find.text('4まい'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('あいうえお'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('ゲーム開始'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('カルタ（'), findsOneWidget);
+    expect(find.byKey(const Key('karuta-game-back')), findsOneWidget);
+  });
+
+  testWidgets('karuta selection shows back control for kyozai exit', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(routes: AppRoutes.table, initialRoute: AppRoutes.karuta),
+    );
+    await tester.pumpAndSettle();
+
+    if (find.text('なんまい あそぶ？').evaluate().isNotEmpty) {
+      await tester.tap(find.text('4まい'));
+      await tester.pumpAndSettle();
+    }
+
+    expect(find.byKey(const Key('karuta-selection-back')), findsOneWidget);
   });
 
   testWidgets('list view shows all selected words in one column', (
