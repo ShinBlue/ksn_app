@@ -26,14 +26,10 @@ class KarutaGameScreen extends StatefulWidget {
 
 class _KarutaGameScreenState extends State<KarutaGameScreen> {
   late final List<KarutaCard> _cards;
+  late final List<KarutaCard> _remainingReadings;
   final _shuffleRandom = Random();
   String? _readingText;
-
-  List<KarutaCard> get _cardsWithReading => _cards
-      .where(
-        (card) => card.sentence != null && card.sentence!.trim().isNotEmpty,
-      )
-      .toList();
+  var _isLastReading = false;
 
   @override
   void initState() {
@@ -41,6 +37,11 @@ class _KarutaGameScreenState extends State<KarutaGameScreen> {
     _cards = List<KarutaCard>.from(
       KarutaRepository.instance.cardsFor(widget.selectedCharacters),
     )..shuffle(_shuffleRandom);
+    _remainingReadings = _cards
+        .where(
+          (card) => card.sentence != null && card.sentence!.trim().isNotEmpty,
+        )
+        .toList();
     AnalyticsService.instance.logScreen('/karuta/game');
     AnalyticsService.instance.logEvent(
       'karuta_game_view',
@@ -52,20 +53,25 @@ class _KarutaGameScreenState extends State<KarutaGameScreen> {
   }
 
   void _drawYomifuda() {
-    final candidates = _cardsWithReading;
-    if (candidates.isEmpty) {
+    if (_remainingReadings.isEmpty) {
+      final message = _readingText == null ? '読み札がありません' : 'すべての読み札を表示しました';
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('読み札がありません')));
+      ).showSnackBar(SnackBar(content: Text(message)));
       return;
     }
-    final picked = candidates[_shuffleRandom.nextInt(candidates.length)];
+    final index = _shuffleRandom.nextInt(_remainingReadings.length);
+    final picked = _remainingReadings.removeAt(index);
     setState(() {
       _readingText = picked.sentence!.trim();
+      _isLastReading = _remainingReadings.isEmpty;
     });
     AnalyticsService.instance.logEvent(
       'karuta_yomifuda_draw',
-      params: {'character': picked.character},
+      params: {
+        'character': picked.character,
+        'remaining': '${_remainingReadings.length}',
+      },
     );
   }
 
@@ -239,6 +245,7 @@ class _KarutaGameScreenState extends State<KarutaGameScreen> {
                         child: _YomifudaSidePanel(
                           panelWidth: sideWidth,
                           readingText: _readingText,
+                          isLastReading: _isLastReading,
                           onDraw: _drawYomifuda,
                         ),
                       ),
@@ -254,11 +261,13 @@ class _KarutaGameScreenState extends State<KarutaGameScreen> {
 class _YomifudaSidePanel extends StatelessWidget {
   final double panelWidth;
   final String? readingText;
+  final bool isLastReading;
   final VoidCallback onDraw;
 
   const _YomifudaSidePanel({
     required this.panelWidth,
     required this.readingText,
+    required this.isLastReading,
     required this.onDraw,
   });
 
@@ -303,9 +312,27 @@ class _YomifudaSidePanel extends StatelessWidget {
                 : Align(
                     alignment: Alignment.topCenter,
                     child: SingleChildScrollView(
-                      child: _VerticalReadingText(
-                        text: readingText!,
-                        fontSize: readingFontSize,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _VerticalReadingText(
+                            text: readingText!,
+                            fontSize: readingFontSize,
+                          ),
+                          if (isLastReading) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              '最後のカード',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: (panelWidth * 0.28).clamp(10.0, 14.0),
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFE65100),
+                                height: 1.2,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ),

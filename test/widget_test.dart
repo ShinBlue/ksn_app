@@ -374,7 +374,7 @@ void main() {
     expect(find.byType(TextField), findsNothing);
   });
 
-  testWidgets('karuta game screen shows back control', (tester) async {
+  testWidgets('karuta game back returns to count picker', (tester) async {
     tester.view.physicalSize = const Size(1280, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -385,7 +385,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('4まい'), findsOneWidget);
+    expect(find.text('なんまい あそぶ？'), findsOneWidget);
     await tester.tap(find.text('4まい'));
     await tester.pumpAndSettle();
 
@@ -396,7 +396,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('カルタ（'), findsOneWidget);
-    expect(find.byKey(const Key('karuta-game-back')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('karuta-game-back')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('なんまい あそぶ？'), findsOneWidget);
+    expect(find.textContaining('カルタ（'), findsNothing);
   });
 
   testWidgets('karuta selection shows back control for kyozai exit', (

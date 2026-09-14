@@ -247,8 +247,20 @@ class _KarutaSelectionScreenState extends State<KarutaSelectionScreen> {
     );
   }
 
-  /// カルタの戻るは、ゲーム／選択どちらからも教材サイトへ出す。
+  /// ゲーム中の戻るは枚数選択（起動時の画面）へ。選択画面の戻るは教材サイトへ。
   void _onKarutaBack() {
+    final nav = _navigatorKey.currentState;
+    if (nav != null && nav.canPop()) {
+      nav.pop();
+      setState(() {
+        _selected.clear();
+        _targetCount = null;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showCountPicker();
+      });
+      return;
+    }
     KyozaiExit.leave();
   }
 
