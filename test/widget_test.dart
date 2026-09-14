@@ -386,6 +386,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('なんまい あそぶ？'), findsOneWidget);
+    expect(find.byKey(const Key('karuta-count-exit')), findsOneWidget);
     await tester.tap(find.text('4まい'));
     await tester.pumpAndSettle();
 
@@ -400,6 +401,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('なんまい あそぶ？'), findsOneWidget);
+    expect(find.byKey(const Key('karuta-count-exit')), findsOneWidget);
     expect(find.textContaining('カルタ（'), findsNothing);
   });
 

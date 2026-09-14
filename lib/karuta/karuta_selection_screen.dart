@@ -585,13 +585,26 @@ class _CountPickerDialog extends StatelessWidget {
                   ),
               ],
             ),
-            if (selectedCount != null) ...[
-              const SizedBox(height: 16),
+            const SizedBox(height: 16),
+            if (selectedCount != null)
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('とじる'),
               ),
-            ],
+            TextButton(
+              key: const Key('karuta-count-exit'),
+              onPressed: () {
+                Navigator.pop(context);
+                KyozaiExit.leave();
+              },
+              child: Text(
+                'カルタ終了',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+            ),
           ],
         ),
       ),
