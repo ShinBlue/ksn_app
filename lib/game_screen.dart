@@ -3,6 +3,7 @@ import 'analytics_service.dart';
 import 'board_content_store.dart';
 import 'board_defaults.dart';
 import 'board_type.dart';
+import 'game_nav_lock.dart';
 import 'illustration_board_pattern.dart';
 import 'illustration_cell_image.dart';
 import 'maru_batsu_mark.dart';
@@ -18,7 +19,7 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> {
-  List<int> _board = List.filled(9, 0); // 0=空, 1=O, 2=X
+  final List<int> _board = List.filled(9, 0); // 0=空, 1=O, 2=X
   int _currentPlayer = 1;
   String? _winner; // null=進行中, 'O', 'X', 'draw'
 
@@ -45,8 +46,35 @@ class _GameScreenState extends State<GameScreen> {
           boardType: widget.boardType.name,
           result: _winner!,
         );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _showEndAndReturnToSettings();
+        });
       }
     });
+  }
+
+  Future<void> _showEndAndReturnToSettings() async {
+    if (_winner == null || !mounted) return;
+    final message = _winner == 'draw'
+        ? 'ひきわけ！'
+        : (_winner == 'maru' ? 'まるのかち！' : 'ばつのかち！');
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('ゲーム終了'),
+        content: Text(message),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('設定にもどる'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    // 盤面選択（HomeScreen）まで戻す。メニューには戻さない。
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   String? _checkWinner() {
@@ -67,15 +95,6 @@ class _GameScreenState extends State<GameScreen> {
     return null;
   }
 
-  void _reset() {
-    AnalyticsService.instance.logGameReset(widget.boardType.name);
-    setState(() {
-      _board = List.filled(9, 0);
-      _currentPlayer = 1;
-      _winner = null;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final colors = _store.colors();
@@ -87,8 +106,10 @@ class _GameScreenState extends State<GameScreen> {
         ? _store.illustrationPattern
         : null;
 
-    return Scaffold(
+    return GameNavLock(
+      child: Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('OXゲーム(三目並べ）'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
@@ -151,34 +172,6 @@ class _GameScreenState extends State<GameScreen> {
                           ),
                         ),
                       ),
-                      SizedBox(height: isCompact ? 16 : 32),
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        spacing: 12,
-                        runSpacing: 8,
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed: _reset,
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('もう一度'),
-                          ),
-                          ElevatedButton.icon(
-                            onPressed: () => Navigator.pop(context),
-                            icon: Icon(
-                              widget.boardType == BoardType.text ||
-                                      widget.boardType == BoardType.illustration
-                                  ? Icons.arrow_back
-                                  : Icons.list,
-                            ),
-                            label: Text(
-                              widget.boardType == BoardType.text ||
-                                      widget.boardType == BoardType.illustration
-                                  ? 'パターン選択'
-                                  : '盤面選択',
-                            ),
-                          ),
-                        ],
-                      ),
                     ],
                   ),
                 ),
@@ -187,6 +180,7 @@ class _GameScreenState extends State<GameScreen> {
           );
         },
       ),
+    ),
     );
   }
 

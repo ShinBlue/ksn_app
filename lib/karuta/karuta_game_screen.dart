@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../analytics_service.dart';
+import '../game_nav_lock.dart';
 import 'karuta_grid_layout.dart';
 import 'karuta_models.dart';
 import 'karuta_repository.dart';
@@ -30,6 +31,7 @@ class _KarutaGameScreenState extends State<KarutaGameScreen> {
   final _shuffleRandom = Random();
   String? _readingText;
   var _isLastReading = false;
+  var _endDialogShown = false;
 
   @override
   void initState() {
@@ -58,6 +60,11 @@ class _KarutaGameScreenState extends State<KarutaGameScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
+      if (_readingText != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _showFinishedAndReturnToSettings();
+        });
+      }
       return;
     }
     final index = _shuffleRandom.nextInt(_remainingReadings.length);
@@ -73,6 +80,32 @@ class _KarutaGameScreenState extends State<KarutaGameScreen> {
         'remaining': '${_remainingReadings.length}',
       },
     );
+    if (_remainingReadings.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showFinishedAndReturnToSettings();
+      });
+    }
+  }
+
+  Future<void> _showFinishedAndReturnToSettings() async {
+    if (!mounted || _endDialogShown) return;
+    _endDialogShown = true;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('ゲーム終了'),
+        content: const Text('すべての読み札を表示しました'),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('設定にもどる'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    widget.onBack?.call();
   }
 
   void _showCardDetail(KarutaCard card) {
@@ -172,22 +205,11 @@ class _KarutaGameScreenState extends State<KarutaGameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) {
-          (widget.onBack ?? () => Navigator.of(context).maybePop()).call();
-        }
-      },
+    return GameNavLock(
       child: Scaffold(
         backgroundColor: const Color(0xFFFFFBFE),
         appBar: AppBar(
-          leading: IconButton(
-            key: const Key('karuta-game-back'),
-            icon: const BackButtonIcon(),
-            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-            onPressed: widget.onBack ?? () => Navigator.of(context).maybePop(),
-          ),
+          automaticallyImplyLeading: false,
           title: Text('カルタ（${_cards.length}まい）'),
           backgroundColor: const Color(0xFFFFF3E0),
         ),

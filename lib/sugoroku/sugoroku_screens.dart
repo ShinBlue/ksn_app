@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../analytics_service.dart';
 import '../app_layout.dart';
-import '../exit_to_kyozai.dart';
+import '../game_nav_lock.dart';
 import '../sound_service.dart';
 import 'sugoroku_animal_board_view.dart';
 import 'sugoroku_animals.dart';
@@ -89,11 +89,11 @@ class _SugorokuSetupScreenState extends State<SugorokuSetupScreen> {
   Widget build(BuildContext context) {
     final savedCount = _store.boards.length;
 
-    return ExitToKyozaiScope(
+    return GameNavLock(
       child: Scaffold(
         backgroundColor: const Color(0xFFFFFBFE),
         appBar: AppBar(
-          leading: const ExitToKyozaiButton(),
+          automaticallyImplyLeading: false,
           title: const Text('すごろく'),
           backgroundColor: const Color(0xFFE8F5E9),
         ),
@@ -234,8 +234,8 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
       _assigningPlayer == 0 ? _player0CandidateId : _player1CandidateId;
 
   Set<String> get _usedIds => {
-    if (_player0CandidateId != null) _player0CandidateId!,
-    if (_player1CandidateId != null) _player1CandidateId!,
+    ?_player0CandidateId,
+    ?_player1CandidateId,
   };
 
   bool get _canStartSetup =>
@@ -600,29 +600,21 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _resetGame();
-            },
-            child: const Text('もういちど'),
-          ),
           FilledButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: const Text('設定にもどる'),
           ),
         ],
       ),
     );
+    if (!mounted) return;
+    _returnToSetup();
   }
 
-  void _resetGame() {
+  void _returnToSetup() {
     if (!_isPlaying) return;
-    AnalyticsService.instance.logSugorokuReset(
-      boardSize: widget.size.name,
-      playMode: _mode.name,
-    );
     setState(() {
+      _isPlaying = false;
       _winnerId = null;
       _activePlayerIndex = 0;
       _diceValue = null;
@@ -630,14 +622,10 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
       _rolling = false;
       _awaitingAnimalPick = false;
       _skipNextTurn.clear();
-      for (final piece in _pieces) {
-        piece.position = 0;
-      }
-      _reshuffleHiddenNumbers();
-      _animalSpots10 = widget.size == SugorokuBoardSize.short10
-          ? SugorokuAnimals.randomAll10(_random)
-          : null;
-      _message = '${_activePiece.name}のばんです';
+      _pieces = [];
+      _message = null;
+      _hiddenState = null;
+      _animalSpots10 = null;
     });
   }
 
@@ -740,7 +728,7 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
       onRollDice: _rollDice,
       onJanken: _pickJanken,
       onPrepareAnimalPick: _prepareAnimalPick,
-      onReset: _resetGame,
+      onReset: _returnToSetup,
     );
 
     if (widget.size == SugorokuBoardSize.long20 && _mode.usesAnimalBoard) {
@@ -780,14 +768,18 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
         ? '${widget.initialBoard!.title} · ${widget.size.label}'
         : widget.size.label;
 
-    return Scaffold(
+    final scaffold = Scaffold(
       backgroundColor: const Color(0xFFFFFBFE),
       appBar: AppBar(
+        automaticallyImplyLeading: !_isPlaying,
         title: Text(appBarTitle),
         backgroundColor: const Color(0xFFE8F5E9),
         actions: [
           if (_isPlaying && _isGameOver)
-            TextButton(onPressed: _resetGame, child: const Text('もういちど')),
+            TextButton(
+              onPressed: _returnToSetup,
+              child: const Text('設定にもどる'),
+            ),
           if (_isPlaying)
             StatefulBuilder(
               builder: (context, setIconState) => IconButton(
@@ -903,6 +895,11 @@ class _SugorokuGameSetupScreenState extends State<SugorokuGameSetupScreen> {
         },
       ),
     );
+
+    if (_isPlaying) {
+      return GameNavLock(child: scaffold);
+    }
+    return scaffold;
   }
 }
 
@@ -1515,8 +1512,8 @@ class _GameControlPanel extends StatelessWidget {
           if (winnerId != null)
             FilledButton.icon(
               onPressed: onReset,
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('もういちど'),
+              icon: const Icon(Icons.arrow_back, size: 18),
+              label: const Text('設定にもどる'),
             )
           else
             _ModeControls(

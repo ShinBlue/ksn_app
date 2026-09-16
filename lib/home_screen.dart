@@ -5,7 +5,7 @@ import 'board_defaults.dart';
 import 'board_edit_screen.dart';
 import 'board_preview.dart';
 import 'board_type.dart';
-import 'exit_to_kyozai.dart';
+import 'game_nav_lock.dart';
 import 'game_screen.dart';
 import 'illustration_pattern_select_screen.dart';
 import 'text_pattern_select_screen.dart';
@@ -85,10 +85,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ExitToKyozaiScope(
+    return GameNavLock(
       child: Scaffold(
         appBar: AppBar(
-          leading: const ExitToKyozaiButton(),
+          automaticallyImplyLeading: false,
           title: const Text('OXゲーム(三目並べ）'),
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         ),

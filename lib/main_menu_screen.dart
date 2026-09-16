@@ -74,22 +74,23 @@ class MainMenuScreen extends StatelessWidget {
 
   void _openMaruBatsu(BuildContext context) {
     AnalyticsService.instance.logMainMenuSelect('maru_batsu');
-    Navigator.pushNamed(context, AppRoutes.maruBatsu);
+    // メニューをスタックに残さず、アプリ設定からメニューへ戻れないようにする。
+    Navigator.pushReplacementNamed(context, AppRoutes.maruBatsu);
   }
 
   void _openSugoroku(BuildContext context) {
     AnalyticsService.instance.logMainMenuSelect('sugoroku');
-    Navigator.pushNamed(context, AppRoutes.sugoroku);
+    Navigator.pushReplacementNamed(context, AppRoutes.sugoroku);
   }
 
   void _openKaruta(BuildContext context) {
     AnalyticsService.instance.logMainMenuSelect('karuta');
-    Navigator.pushNamed(context, AppRoutes.karuta);
+    Navigator.pushReplacementNamed(context, AppRoutes.karuta);
   }
 
   void _openGojuon(BuildContext context) {
     AnalyticsService.instance.logMainMenuSelect('gojuon');
-    Navigator.pushNamed(context, AppRoutes.gojuon);
+    Navigator.pushReplacementNamed(context, AppRoutes.gojuon);
   }
 
   void _showComingSoon(BuildContext context, String name) {

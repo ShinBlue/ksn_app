@@ -374,38 +374,7 @@ void main() {
     expect(find.byType(TextField), findsNothing);
   });
 
-  testWidgets('karuta game back returns to count picker', (tester) async {
-    tester.view.physicalSize = const Size(1280, 900);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    await tester.pumpWidget(
-      MaterialApp(routes: AppRoutes.table, initialRoute: AppRoutes.karuta),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('なんまい あそぶ？'), findsOneWidget);
-    expect(find.byKey(const Key('karuta-count-exit')), findsOneWidget);
-    await tester.tap(find.text('4まい'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('あいうえお'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('ゲーム開始'));
-    await tester.pumpAndSettle();
-
-    expect(find.textContaining('カルタ（'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('karuta-game-back')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('なんまい あそぶ？'), findsOneWidget);
-    expect(find.byKey(const Key('karuta-count-exit')), findsOneWidget);
-    expect(find.textContaining('カルタ（'), findsNothing);
-  });
-
-  testWidgets('karuta selection shows back control for kyozai exit', (
+  testWidgets('karuta game locks back until finished then returns to settings', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(1280, 900);
@@ -418,12 +387,48 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    if (find.text('なんまい あそぶ？').evaluate().isNotEmpty) {
-      await tester.tap(find.text('4まい'));
+    expect(find.text('なんまい あそぶ？'), findsOneWidget);
+    await tester.tap(find.text('4まい'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('あいうえお'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('ゲーム開始'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('カルタ（'), findsOneWidget);
+    expect(find.byKey(const Key('karuta-game-back')), findsNothing);
+
+    // 読み札を出し切ると終了ダイアログ → 設定へ戻る
+    for (var i = 0; i < 8; i++) {
+      if (find.text('ゲーム終了').evaluate().isNotEmpty) break;
+      await tester.tap(find.byKey(const Key('karuta-yomifuda-button')));
       await tester.pumpAndSettle();
     }
 
-    expect(find.byKey(const Key('karuta-selection-back')), findsOneWidget);
+    expect(find.text('ゲーム終了'), findsOneWidget);
+    await tester.tap(find.text('設定にもどる'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('なんまい あそぶ？'), findsOneWidget);
+    expect(find.textContaining('カルタ（'), findsNothing);
+  });
+
+  testWidgets('karuta selection locks exit controls', (tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(routes: AppRoutes.table, initialRoute: AppRoutes.karuta),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('なんまい あそぶ？'), findsOneWidget);
+    expect(find.byKey(const Key('karuta-count-exit')), findsNothing);
+    expect(find.byKey(const Key('karuta-selection-back')), findsNothing);
   });
 
   testWidgets('list view shows all selected words in one column', (

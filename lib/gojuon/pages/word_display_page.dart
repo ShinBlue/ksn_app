@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import '../../app_layout.dart';
+import '../../game_nav_lock.dart';
 import '../excluded_sounds.dart';
 import '../models/display_item.dart';
 import '../models/word_data.dart';
@@ -179,7 +180,17 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
   }
 
   PreferredSizeWidget _buildAppBar() {
-    return AppBar();
+    return AppBar(
+      // ブラウザ戻るは GameNavLock で無効。設定画面へはアプリ内の戻るのみ。
+      automaticallyImplyLeading: false,
+      leading: Builder(
+        builder: (context) => IconButton(
+          icon: const BackButtonIcon(),
+          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+      ),
+    );
   }
 
   Widget? _buildPrintButton({required bool compact}) {
@@ -220,21 +231,25 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
   Widget build(BuildContext context) {
     final compact = AppLayout.isCompact(context);
     if (displayItems.isEmpty) {
-      return Scaffold(
-        appBar: _buildAppBar(),
-        body: const Center(child: Text('表示するデータがありません')),
+      return GameNavLock(
+        child: Scaffold(
+          appBar: _buildAppBar(),
+          body: const Center(child: Text('表示するデータがありません')),
+        ),
       );
     }
 
-    return Scaffold(
-      appBar: _buildAppBar(),
-      floatingActionButton: _buildPrintButton(compact: compact),
-      floatingActionButtonLocation: compact
-          ? FloatingActionButtonLocation.endFloat
-          : FloatingActionButtonLocation.endTop,
-      body: widget.displayFormat == 'リスト'
-          ? _buildListView(compact: compact)
-          : _buildSingleView(compact: compact),
+    return GameNavLock(
+      child: Scaffold(
+        appBar: _buildAppBar(),
+        floatingActionButton: _buildPrintButton(compact: compact),
+        floatingActionButtonLocation: compact
+            ? FloatingActionButtonLocation.endFloat
+            : FloatingActionButtonLocation.endTop,
+        body: widget.displayFormat == 'リスト'
+            ? _buildListView(compact: compact)
+            : _buildSingleView(compact: compact),
+      ),
     );
   }
 

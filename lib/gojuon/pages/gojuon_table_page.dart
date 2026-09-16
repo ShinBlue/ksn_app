@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../analytics_service.dart';
 import '../../app_layout.dart';
-import '../../exit_to_kyozai.dart';
+import '../../game_nav_lock.dart';
 import '../excluded_sounds.dart';
 import '../models/kana_cell.dart';
 import '../models/layout_info.dart';
@@ -424,11 +424,11 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return ExitToKyozaiScope(
+    return GameNavLock(
       child: Scaffold(
         backgroundColor: colorScheme.surface,
         appBar: AppBar(
-          leading: const ExitToKyozaiButton(),
+          automaticallyImplyLeading: false,
           title: const Text('ことば表示アプリ'),
           backgroundColor: const Color(0xFFEDE7F6),
         ),

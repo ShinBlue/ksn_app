@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../analytics_service.dart';
 import '../app_layout.dart';
-import '../exit_to_kyozai.dart';
+import '../game_nav_lock.dart';
 import 'karuta_catalog.dart';
 import 'karuta_game_screen.dart';
 import 'karuta_models.dart';
@@ -247,7 +247,7 @@ class _KarutaSelectionScreenState extends State<KarutaSelectionScreen> {
     );
   }
 
-  /// ゲーム中の戻るは枚数選択（起動時の画面）へ。選択画面の戻るは教材サイトへ。
+  /// ゲーム中の戻るは枚数選択へ。設定画面自体からはアプリ外へ出ない。
   void _onKarutaBack() {
     final nav = _navigatorKey.currentState;
     if (nav != null && nav.canPop()) {
@@ -259,20 +259,12 @@ class _KarutaSelectionScreenState extends State<KarutaSelectionScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _showCountPicker();
       });
-      return;
     }
-    KyozaiExit.leave();
   }
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) {
-          _onKarutaBack();
-        }
-      },
+    return GameNavLock(
       child: Navigator(
         key: _navigatorKey,
         onGenerateRoute: (settings) {
@@ -307,12 +299,7 @@ class _KarutaSelectionScreenState extends State<KarutaSelectionScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFFFFBFE),
       appBar: AppBar(
-        leading: IconButton(
-          key: const Key('karuta-selection-back'),
-          icon: const BackButtonIcon(),
-          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-          onPressed: _onKarutaBack,
-        ),
+        automaticallyImplyLeading: false,
         title: const Text('カルタ'),
         backgroundColor: const Color(0xFFFFF3E0),
       ),
@@ -591,20 +578,6 @@ class _CountPickerDialog extends StatelessWidget {
                 onPressed: () => Navigator.pop(context),
                 child: const Text('とじる'),
               ),
-            TextButton(
-              key: const Key('karuta-count-exit'),
-              onPressed: () {
-                Navigator.pop(context);
-                KyozaiExit.leave();
-              },
-              child: Text(
-                'カルタ終了',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-            ),
           ],
         ),
       ),
