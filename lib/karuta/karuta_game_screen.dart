@@ -30,6 +30,7 @@ class _KarutaGameScreenState extends State<KarutaGameScreen> {
   late final List<KarutaCard> _remainingReadings;
   final _shuffleRandom = Random();
   String? _readingText;
+  String? _readingCharacter;
   var _isLastReading = false;
   var _endDialogShown = false;
 
@@ -71,6 +72,7 @@ class _KarutaGameScreenState extends State<KarutaGameScreen> {
     final picked = _remainingReadings.removeAt(index);
     setState(() {
       _readingText = picked.sentence!.trim();
+      _readingCharacter = picked.character;
       _isLastReading = _remainingReadings.isEmpty;
     });
     AnalyticsService.instance.logEvent(
@@ -266,6 +268,7 @@ class _KarutaGameScreenState extends State<KarutaGameScreen> {
                         width: sideWidth,
                         child: _YomifudaSidePanel(
                           panelWidth: sideWidth,
+                          readingCharacter: _readingCharacter,
                           readingText: _readingText,
                           isLastReading: _isLastReading,
                           onDraw: _drawYomifuda,
@@ -282,12 +285,14 @@ class _KarutaGameScreenState extends State<KarutaGameScreen> {
 
 class _YomifudaSidePanel extends StatelessWidget {
   final double panelWidth;
+  final String? readingCharacter;
   final String? readingText;
   final bool isLastReading;
   final VoidCallback onDraw;
 
   const _YomifudaSidePanel({
     required this.panelWidth,
+    required this.readingCharacter,
     required this.readingText,
     required this.isLastReading,
     required this.onDraw,
@@ -298,6 +303,7 @@ class _YomifudaSidePanel extends StatelessWidget {
     final buttonSide = ((panelWidth - 8).clamp(36.0, 120.0)) * 0.8;
     // 2列縦書き用に、パネル幅に対してやや小さめの文字サイズ
     final readingFontSize = (panelWidth * 0.38).clamp(12.0, 24.0);
+    final characterFontSize = (panelWidth * 0.42).clamp(14.0, 28.0);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
@@ -337,6 +343,19 @@ class _YomifudaSidePanel extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          if (readingCharacter != null) ...[
+                            Text(
+                              '「$readingCharacter」',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: characterFontSize,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFE65100),
+                                height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                          ],
                           _VerticalReadingText(
                             text: readingText!,
                             fontSize: readingFontSize,
