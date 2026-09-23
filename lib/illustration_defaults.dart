@@ -8,10 +8,11 @@ class IllustrationDefaults {
   static const illustrationPatternStorageKey = 'board_illustration_pattern';
 
   // Git/Linux ビルドと一致する NFC 形式のパス
+  // ねこ・さる・うさぎは写実版（すごろく用のイラスト版と分離）
   static const List<String> animalImages = [
-    'assets/images/動物/うさぎ.jpg',
-    'assets/images/動物/さる.jpg',
-    'assets/images/動物/ねこ.jpg',
+    'assets/images/動物/写実/うさぎ.jpg',
+    'assets/images/動物/写実/さる.jpg',
+    'assets/images/動物/写実/ねこ.jpg',
     'assets/images/動物/ゴリラ.jpg',
     'assets/images/動物/コアラ.jpg',
     'assets/images/動物/パンダ.jpg',
