@@ -39,3 +39,5 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
           channelId: live
+          # 最新CLIが Service Usage 権限チェックで 403 になるため、成功実績のある版に固定
+          firebaseToolsVersion: 15.30.2
