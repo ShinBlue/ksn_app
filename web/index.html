@@ -32,6 +32,10 @@
   <title>ことばサポートネット練習アプリ</title>
   <link rel="manifest" href="manifest.json">
   <script>
+    // printing パッケージが使う pdf.js の版（CDN 自動読込時の保険）
+    var dartPdfJsVersion = "6.2.108";
+  </script>
+  <script>
     // GitHub Pages では未知のパスが 404.html 経由になる。
     // 元のパスを戻してから Flutter のルーティングに渡す。
     (function () {

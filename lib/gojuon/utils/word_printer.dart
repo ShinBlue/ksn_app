@@ -1,9 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import '../models/display_item.dart';
+import 'word_print_open_stub.dart'
+    if (dart.library.html) 'word_print_open_web.dart' as pdf_open;
 import 'word_print_pdf.dart';
 
 const _logoAsset = 'assets/images/ksn_logo.png';
@@ -14,7 +17,7 @@ Future<pw.Font> loadPrintFont() async {
   return pw.Font.ttf(data);
 }
 
-/// 選んだことばをPDFとして生成し、印刷ダイアログを開く。
+/// 選んだことばをPDFとして生成し、印刷ダイアログ（またはPDF表示）を開く。
 Future<void> printSelectedWords(
   List<DisplayItem> items, {
   bool enableKanaColor = false,
@@ -23,19 +26,21 @@ Future<void> printSelectedWords(
   final logoData = await rootBundle.load(_logoAsset);
   final logoBytes = logoData.buffer.asUint8List();
   final font = await loadPrintFont();
+  final bytes = await buildWordPrintPdf(
+    items: items,
+    logoBytes: logoBytes,
+    font: font,
+    enableKanaColor: enableKanaColor,
+    selectedKanas: selectedKanas,
+  );
+
+  if (kIsWeb) {
+    await pdf_open.openPdfForPrint(bytes);
+    return;
+  }
 
   await Printing.layoutPdf(
-    // ブラウザ印刷ヘッダに出る名前を空にする
-    name: '',
-    onLayout: (PdfPageFormat format) {
-      return buildWordPrintPdf(
-        items: items,
-        logoBytes: logoBytes,
-        font: font,
-        pageFormat: format,
-        enableKanaColor: enableKanaColor,
-        selectedKanas: selectedKanas,
-      );
-    },
+    name: 'kotoba',
+    onLayout: (PdfPageFormat format) async => bytes,
   );
 }
