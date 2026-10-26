@@ -462,4 +462,51 @@ void main() {
     expect(find.text('1 / 2'), findsNothing);
     expect(find.byKey(const Key('display-page-forward')), findsNothing);
   });
+
+  testWidgets('word display back returns to previous screen under GameNavLock', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => WordDisplayPage(
+                      wordDataList: [
+                        WordData(
+                          type: '単語',
+                          kana: 'あ',
+                          number: 1,
+                          level1: 'あか',
+                        ),
+                      ],
+                      selectedKanas: const ['あ'],
+                      selectedLevels: const ['レベル1'],
+                      includeShortText: false,
+                      displayFormat: 'リスト',
+                      enableKanaColor: false,
+                    ),
+                  ),
+                );
+              },
+              child: const Text('open-display'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('open-display'));
+    await tester.pumpAndSettle();
+    expect(find.text('あか'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('word-display-back')));
+    await tester.pumpAndSettle();
+    expect(find.text('open-display'), findsOneWidget);
+    expect(find.text('あか'), findsNothing);
+  });
 }

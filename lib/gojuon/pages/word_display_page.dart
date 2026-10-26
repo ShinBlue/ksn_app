@@ -182,12 +182,14 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       // ブラウザ戻るは GameNavLock で無効。設定画面へはアプリ内の戻るのみ。
+      // PopScope(canPop: false) 配下では maybePop は効かないので pop を使う。
       automaticallyImplyLeading: false,
       leading: Builder(
         builder: (context) => IconButton(
+          key: const Key('word-display-back'),
           icon: const BackButtonIcon(),
           tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
     );
