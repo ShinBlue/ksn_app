@@ -463,9 +463,7 @@ void main() {
     expect(find.byKey(const Key('display-page-forward')), findsNothing);
   });
 
-  testWidgets('word display back returns to previous screen under GameNavLock', (
-    tester,
-  ) async {
+  testWidgets('word display back returns to previous screen', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Builder(
