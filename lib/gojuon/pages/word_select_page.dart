@@ -10,9 +10,14 @@ import 'word_display_page.dart';
 
 class _SelectColumn {
   final String title;
+  final String keySuffix;
   final List<int> indices;
 
-  const _SelectColumn({required this.title, required this.indices});
+  const _SelectColumn({
+    required this.title,
+    required this.keySuffix,
+    required this.indices,
+  });
 }
 
 /// 表示前に候補を選び、選んだものだけを [WordDisplayPage] へ渡す。
@@ -98,19 +103,35 @@ class _WordSelectPageState extends State<WordSelectPage> {
       }
     }
 
+    const keySuffixes = {
+      'レベル1': 'level1',
+      'レベル2': 'level2',
+      'レベル3': 'level3',
+      '文': 'sentence',
+    };
+
     return [
       for (final title in ['レベル1', 'レベル2', 'レベル3', '文'])
         if (buckets[title]!.isNotEmpty)
-          _SelectColumn(title: title, indices: buckets[title]!),
+          _SelectColumn(
+            title: title,
+            keySuffix: keySuffixes[title]!,
+            indices: buckets[title]!,
+          ),
     ];
   }
 
   int get _selectedCount => _selected.where((v) => v).length;
 
-  void _selectAll() {
+  bool _isColumnFullySelected(_SelectColumn column) {
+    return column.indices.every((i) => _selected[i]);
+  }
+
+  void _toggleColumnSelection(_SelectColumn column) {
+    final selectAll = !_isColumnFullySelected(column);
     setState(() {
-      for (var i = 0; i < _selected.length; i++) {
-        _selected[i] = true;
+      for (final i in column.indices) {
+        _selected[i] = selectAll;
       }
     });
   }
@@ -177,25 +198,18 @@ class _WordSelectPageState extends State<WordSelectPage> {
                     compact ? 12 : 16,
                     8,
                   ),
-                  child: Row(
-                    children: [
-                      OutlinedButton(
-                        key: const Key('word-select-all'),
-                        onPressed: _selectAll,
-                        child: const Text('全部選択'),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: FilledButton(
+                      key: const Key('word-select-display'),
+                      onPressed: canDisplay ? _openDisplay : null,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: Colors.blue.shade100,
                       ),
-                      const Spacer(),
-                      FilledButton(
-                        key: const Key('word-select-display'),
-                        onPressed: canDisplay ? _openDisplay : null,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                          disabledBackgroundColor: Colors.blue.shade100,
-                        ),
-                        child: const Text('表示'),
-                      ),
-                    ],
+                      child: const Text('表示'),
+                    ),
                   ),
                 ),
                 Expanded(child: _buildColumnLayout(compact: compact)),
@@ -254,11 +268,13 @@ class _WordSelectPageState extends State<WordSelectPage> {
   }
 
   Widget _buildColumn(_SelectColumn column, {required bool compact}) {
+    final allSelected = _isColumnFullySelected(column);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+          padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
           child: Text(
             column.title,
             textAlign: TextAlign.center,
@@ -266,6 +282,14 @@ class _WordSelectPageState extends State<WordSelectPage> {
               fontSize: compact ? 14 : 16,
               fontWeight: FontWeight.bold,
             ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+          child: OutlinedButton(
+            key: Key('word-select-toggle-${column.keySuffix}'),
+            onPressed: () => _toggleColumnSelection(column),
+            child: Text(allSelected ? '全部解除' : '全部選択'),
           ),
         ),
         Expanded(

@@ -32,30 +32,43 @@ void main() {
     );
   }
 
-  testWidgets('candidates start unchecked and select-all enables display', (
-    tester,
-  ) async {
+  testWidgets('column toggle selects all then clears all', (tester) async {
     await tester.pumpWidget(MaterialApp(home: buildSelectPage()));
     await tester.pumpAndSettle();
 
     expect(find.text('候補 0 / 3'), findsOneWidget);
-    expect(find.text('あか'), findsOneWidget);
-    expect(find.text('あお'), findsOneWidget);
-    expect(find.text('あき'), findsOneWidget);
+    final toggle = find.byKey(const Key('word-select-toggle-level1'));
+    expect(toggle, findsOneWidget);
+    expect(
+      find.descendant(of: toggle, matching: find.text('全部選択')),
+      findsOneWidget,
+    );
 
     final displayButton = tester.widget<FilledButton>(
       find.byKey(const Key('word-select-display')),
     );
     expect(displayButton.onPressed, isNull);
 
-    await tester.tap(find.byKey(const Key('word-select-all')));
+    await tester.tap(toggle);
     await tester.pumpAndSettle();
     expect(find.text('候補 3 / 3'), findsOneWidget);
+    expect(
+      find.descendant(of: toggle, matching: find.text('全部解除')),
+      findsOneWidget,
+    );
     expect(
       tester
           .widget<FilledButton>(find.byKey(const Key('word-select-display')))
           .onPressed,
       isNotNull,
+    );
+
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(find.text('候補 0 / 3'), findsOneWidget);
+    expect(
+      find.descendant(of: toggle, matching: find.text('全部選択')),
+      findsOneWidget,
     );
   });
 
@@ -75,6 +88,58 @@ void main() {
     expect(find.text('あお'), findsOneWidget);
     expect(find.text('あか'), findsNothing);
     expect(find.text('あき'), findsNothing);
+  });
+
+  testWidgets('each level has its own select toggle', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: buildSelectPage(
+          selectedLevels: const ['レベル1', 'レベル2'],
+          includeShortText: true,
+          wordDataList: [
+            WordData(
+              type: '単語',
+              kana: 'あ',
+              number: 1,
+              level1: 'あか',
+              level2: 'ドア',
+            ),
+            WordData(
+              type: '単語',
+              kana: 'あ',
+              number: 2,
+              level1: 'あいさつ',
+              level2: 'ペア',
+            ),
+            WordData(type: '短文', kana: 'あ', number: 1, level1: 'ドアを あける'),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('word-select-toggle-level1')), findsOneWidget);
+    expect(find.byKey(const Key('word-select-toggle-level2')), findsOneWidget);
+    expect(
+      find.byKey(const Key('word-select-toggle-sentence')),
+      findsOneWidget,
+    );
+    expect(find.text('全部選択'), findsNWidgets(3));
+
+    await tester.tap(find.byKey(const Key('word-select-toggle-level1')));
+    await tester.pumpAndSettle();
+    expect(find.text('候補 2 / 5'), findsOneWidget);
+    expect(find.text('全部解除'), findsOneWidget);
+    expect(find.text('全部選択'), findsNWidgets(2));
+
+    await tester.tap(find.byKey(const Key('word-select-toggle-sentence')));
+    await tester.pumpAndSettle();
+    expect(find.text('候補 3 / 5'), findsOneWidget);
   });
 
   testWidgets('shows level and sentence columns sorted by mora count', (
@@ -185,7 +250,7 @@ void main() {
       );
     }
 
-    await tester.tap(find.byKey(const Key('word-select-all')));
+    await tester.tap(find.byKey(const Key('word-select-toggle-level1')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('word-select-display')));
     await tester.pumpAndSettle();
