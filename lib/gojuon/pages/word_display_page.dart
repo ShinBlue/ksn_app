@@ -1,57 +1,26 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import '../../app_layout.dart';
-import '../excluded_sounds.dart';
 import '../models/display_item.dart';
-import '../models/word_data.dart';
 import '../utils/kana_highlight.dart';
 import '../utils/word_printer.dart';
 
-/// 表示指定のラベルから、音ごとの件数上限を返す。指定なしは null。
-/// 除外音で落ちた分は、その音の後ろの候補から補う。
-int? itemLimitForDisplaySpec(String displaySpec) {
-  switch (displaySpec) {
-    case 'No.1〜5':
-    case '1〜5': // 旧ラベル互換
-      return 5;
-    case 'No.1〜10':
-    case '1〜10': // 旧ラベル互換
-      return 10;
-    default:
-      return null;
-  }
-}
-
-// 単語表示ページ
+// 単語表示ページ（確定済みの候補を表示する）
 class WordDisplayPage extends StatefulWidget {
-  final List<WordData> wordDataList;
+  final List<DisplayItem> displayItems;
   final List<String> selectedKanas;
-  final List<String> selectedLevels;
-  final bool includeShortText;
   final String displayFormat;
-  final String displaySpec;
   final bool enableKanaColor;
   final bool enableBlueFrame;
   final bool enableRedDoubleCircle;
-  final bool enableRandomOrder;
-  final List<String> excludedSounds;
-  final Random? random;
 
   const WordDisplayPage({
     super.key,
-    required this.wordDataList,
+    required this.displayItems,
     required this.selectedKanas,
-    required this.selectedLevels,
-    required this.includeShortText,
     required this.displayFormat,
     required this.enableKanaColor,
-    this.displaySpec = '指定なし',
     this.enableBlueFrame = true,
     this.enableRedDoubleCircle = true,
-    this.enableRandomOrder = false,
-    this.excludedSounds = const [],
-    this.random,
   });
 
   @override
@@ -60,7 +29,6 @@ class WordDisplayPage extends StatefulWidget {
 
 class _WordDisplayPageState extends State<WordDisplayPage> {
   int currentIndex = 0;
-  List<DisplayItem> displayItems = [];
   final Set<int> _framed = {};
   final Set<int> _circled = {};
 
@@ -72,94 +40,7 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
   static const _singleFontSizeCompact = 36.0;
   static const _frameToggleSize = 28.0;
 
-  @override
-  void initState() {
-    super.initState();
-    _filterAndPrepareData();
-  }
-
-  void _filterAndPrepareData() {
-    final List<DisplayItem> items = [];
-    final itemLimit = itemLimitForDisplaySpec(widget.displaySpec);
-
-    // 選択した音ごとに候補を集め、表示指定があれば音ごとに先頭 N 件を取る
-    for (final kana in widget.selectedKanas) {
-      final kanaItems = <DisplayItem>[];
-
-      for (final wordData in widget.wordDataList) {
-        if (wordData.kana != kana) {
-          continue;
-        }
-
-        // 種類が「短文」の場合：レベル1の列に含まれているデータを表示
-        if (wordData.type == '短文') {
-          if (widget.includeShortText) {
-            if (wordData.level1 != null && wordData.level1!.isNotEmpty) {
-              _addIfAllowed(kanaItems, wordData.level1!, isShortSentence: true);
-            }
-          }
-          continue;
-        }
-
-        // 種類が「単語」の場合：選択されたレベル（レベル1〜3）に対応する列のデータを表示
-        if (wordData.type == '単語') {
-          if (widget.selectedLevels.contains('レベル1')) {
-            if (wordData.level1 != null && wordData.level1!.isNotEmpty) {
-              _addIfAllowed(
-                kanaItems,
-                wordData.level1!,
-                isShortSentence: false,
-              );
-            }
-          }
-          if (widget.selectedLevels.contains('レベル2')) {
-            if (wordData.level2 != null && wordData.level2!.isNotEmpty) {
-              _addIfAllowed(
-                kanaItems,
-                wordData.level2!,
-                isShortSentence: false,
-              );
-            }
-          }
-          if (widget.selectedLevels.contains('レベル3')) {
-            if (wordData.level3 != null && wordData.level3!.isNotEmpty) {
-              _addIfAllowed(
-                kanaItems,
-                wordData.level3!,
-                isShortSentence: false,
-              );
-            }
-          }
-        }
-      }
-
-      if (itemLimit == null) {
-        items.addAll(kanaItems);
-      } else {
-        items.addAll(kanaItems.take(itemLimit));
-      }
-    }
-
-    if (widget.enableRandomOrder && items.length > 1) {
-      items.shuffle(widget.random);
-    }
-
-    setState(() {
-      displayItems = items;
-      currentIndex = 0;
-    });
-  }
-
-  void _addIfAllowed(
-    List<DisplayItem> items,
-    String text, {
-    required bool isShortSentence,
-  }) {
-    if (ExcludedSounds.containsAny(text, widget.excludedSounds)) {
-      return;
-    }
-    items.add(DisplayItem(text: text, isShortSentence: isShortSentence));
-  }
+  List<DisplayItem> get displayItems => widget.displayItems;
 
   Future<void> _onPrintPressed() async {
     if (displayItems.isEmpty) return;
@@ -179,7 +60,7 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
   }
 
   PreferredSizeWidget _buildAppBar() {
-    // 設定画面へ戻すため GameNavLock は掛けない（親の五十音設定側で離脱防止する）。
+    // 選択画面へ戻す。離脱防止は親の五十音設定側で行う。
     return AppBar(
       automaticallyImplyLeading: false,
       leading: IconButton(
@@ -431,20 +312,18 @@ class _WordDisplayPageState extends State<WordDisplayPage> {
     );
   }
 
-  // 選択された音の文字を赤く表示するヘルパーメソッド
   Widget _buildHighlightedText(
     String text, {
     double fontSize = 24,
     FontWeight? fontWeight,
   }) {
-    // 選択音カラーがOFFの場合、または選択された音がない場合は通常表示
     if (!widget.enableKanaColor || widget.selectedKanas.isEmpty) {
       return Text(
         text,
         style: TextStyle(
           fontSize: fontSize,
           fontWeight: fontWeight,
-          color: Colors.black, // テキストのデフォルト色を指定（Material3対応）
+          color: Colors.black,
         ),
         textAlign: TextAlign.center,
       );

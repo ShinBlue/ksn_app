@@ -1,9 +1,7 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ksn_app/app_routes.dart';
-import 'package:ksn_app/gojuon/models/word_data.dart';
+import 'package:ksn_app/gojuon/models/display_item.dart';
 import 'package:ksn_app/gojuon/pages/word_display_page.dart';
 import 'package:ksn_app/karuta/karuta_game_screen.dart';
 import 'package:ksn_app/main.dart';
@@ -85,87 +83,6 @@ void main() {
     expect(find.text('10語'), findsNothing);
   });
 
-  testWidgets('display spec limits to five items per kana after exclusions', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: WordDisplayPage(
-          wordDataList: [
-            for (var i = 1; i <= 8; i++)
-              WordData(type: '単語', kana: 'あ', number: i, level1: '語$i'),
-          ],
-          selectedKanas: const ['あ'],
-          selectedLevels: const ['レベル1'],
-          includeShortText: false,
-          displayFormat: 'リスト',
-          displaySpec: 'No.1〜5',
-          enableKanaColor: false,
-          // 語2・語4 を除外しても、その音の後ろから補って5件にする
-          excludedSounds: const ['2', '4'],
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('語1'), findsOneWidget);
-    expect(find.text('語2'), findsNothing);
-    expect(find.text('語3'), findsOneWidget);
-    expect(find.text('語4'), findsNothing);
-    expect(find.text('語5'), findsOneWidget);
-    expect(find.text('語6'), findsOneWidget);
-    expect(find.text('語7'), findsOneWidget);
-    expect(find.text('語8'), findsNothing);
-  });
-
-  testWidgets(
-    'display spec takes five items for each remaining kana after exclusion',
-    (tester) async {
-      tester.view.physicalSize = const Size(800, 5000);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: WordDisplayPage(
-            wordDataList: [
-              for (final kana in ['あ', 'い', 'う', 'え', 'お'])
-                for (var i = 1; i <= 8; i++)
-                  WordData(
-                    type: '単語',
-                    kana: kana,
-                    number: i,
-                    level1: '$kana$i',
-                  ),
-            ],
-            selectedKanas: const ['あ', 'い', 'う', 'え', 'お'],
-            selectedLevels: const ['レベル1'],
-            includeShortText: false,
-            displayFormat: 'リスト',
-            displaySpec: 'No.1〜5',
-            enableKanaColor: false,
-            excludedSounds: const ['あ'],
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // あ行は除外音で全滅し、い・う・え・おが各5語
-      for (final kana in ['あ']) {
-        for (var i = 1; i <= 8; i++) {
-          expect(find.text('$kana$i'), findsNothing);
-        }
-      }
-      for (final kana in ['い', 'う', 'え', 'お']) {
-        for (var i = 1; i <= 5; i++) {
-          expect(find.text('$kana$i'), findsOneWidget);
-        }
-        expect(find.text('${kana}6'), findsNothing);
-      }
-    },
-  );
-
   testWidgets('gojuon settings does not use vertical scroll in landscape', (
     tester,
   ) async {
@@ -210,7 +127,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('game entry screens show a back button', (tester) async {
+  testWidgets('gojuon settings locks exit to menu', (tester) async {
     tester.view.physicalSize = const Size(1280, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -220,8 +137,10 @@ void main() {
       MaterialApp(routes: AppRoutes.table, initialRoute: AppRoutes.gojuon),
     );
     await tester.pumpAndSettle();
-    expect(find.byType(BackButtonIcon), findsOneWidget);
+    // メニューへは戻れない（離脱防止）。候補選択・表示画面側で戻るを出す。
+    expect(find.byType(BackButtonIcon), findsNothing);
     expect(find.text('練習アプリ'), findsNothing);
+    expect(find.text('ことば表示アプリ'), findsWidgets);
   });
 
   testWidgets('sugoroku named route opens the game screen', (tester) async {
@@ -239,12 +158,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: WordDisplayPage(
-          wordDataList: [
-            WordData(type: '単語', kana: 'あ', number: 1, level1: 'あか'),
+          displayItems: const [
+            DisplayItem(text: 'あか', isShortSentence: false),
           ],
           selectedKanas: const ['あ'],
-          selectedLevels: const ['レベル1'],
-          includeShortText: false,
           displayFormat: 'リスト',
           enableKanaColor: false,
           enableBlueFrame: true,
@@ -266,73 +183,6 @@ void main() {
     await tester.tap(find.byKey(const Key('word-text-0')));
     await tester.pump();
     expect(find.byKey(const Key('word-double-circle-0')), findsOneWidget);
-  });
-
-  testWidgets('random order switch shuffles selected words', (tester) async {
-    const originals = ['あか', 'あお', 'あき', 'あめ'];
-    final expected = List<String>.from(originals)..shuffle(Random(1));
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: WordDisplayPage(
-          wordDataList: [
-            for (var i = 0; i < originals.length; i++)
-              WordData(
-                type: '単語',
-                kana: 'あ',
-                number: i + 1,
-                level1: originals[i],
-              ),
-          ],
-          selectedKanas: const ['あ'],
-          selectedLevels: const ['レベル1'],
-          includeShortText: false,
-          displayFormat: 'リスト',
-          enableKanaColor: false,
-          enableRandomOrder: true,
-          random: Random(1),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(expected, isNot(originals));
-    for (var i = 0; i < expected.length; i++) {
-      expect(
-        find.descendant(
-          of: find.byKey(Key('word-text-$i')),
-          matching: find.text(expected[i]),
-        ),
-        findsOneWidget,
-      );
-    }
-  });
-
-  testWidgets('excluded sounds drop matching words and short sentences', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: WordDisplayPage(
-          wordDataList: [
-            WordData(type: '単語', kana: 'あ', number: 1, level1: 'あか'),
-            WordData(type: '単語', kana: 'あ', number: 2, level1: 'あめ'),
-            WordData(type: '短文', kana: 'あ', number: 1, level1: 'ドアを あける'),
-          ],
-          selectedKanas: const ['あ'],
-          selectedLevels: const ['レベル1'],
-          includeShortText: true,
-          displayFormat: 'リスト',
-          enableKanaColor: false,
-          excludedSounds: const ['か', 'け'],
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('あめ'), findsOneWidget);
-    expect(find.text('あか'), findsNothing);
-    expect(find.text('ドアを あける'), findsNothing);
   });
 
   testWidgets('confirm locks field and clear restores input', (tester) async {
@@ -442,13 +292,11 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: WordDisplayPage(
-          wordDataList: [
+          displayItems: [
             for (var i = 0; i < 6; i++)
-              WordData(type: '単語', kana: 'あ', number: i + 1, level1: '語$i'),
+              DisplayItem(text: '語$i', isShortSentence: false),
           ],
           selectedKanas: const ['あ'],
-          selectedLevels: const ['レベル1'],
-          includeShortText: false,
           displayFormat: 'リスト',
           enableKanaColor: false,
         ),
@@ -472,18 +320,11 @@ void main() {
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (_) => WordDisplayPage(
-                      wordDataList: [
-                        WordData(
-                          type: '単語',
-                          kana: 'あ',
-                          number: 1,
-                          level1: 'あか',
-                        ),
+                    builder: (_) => const WordDisplayPage(
+                      displayItems: [
+                        DisplayItem(text: 'あか', isShortSentence: false),
                       ],
-                      selectedKanas: const ['あ'],
-                      selectedLevels: const ['レベル1'],
-                      includeShortText: false,
+                      selectedKanas: ['あ'],
                       displayFormat: 'リスト',
                       enableKanaColor: false,
                     ),

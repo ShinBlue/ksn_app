@@ -9,7 +9,7 @@ import '../models/word_data.dart';
 import '../utils/layout_calculator.dart';
 import '../widgets/kana_text.dart';
 import '../word_list_loader.dart';
-import 'word_display_page.dart';
+import 'word_select_page.dart';
 
 class GojuonTablePage extends StatefulWidget {
   const GojuonTablePage({super.key});
@@ -1176,7 +1176,7 @@ class _GojuonTablePageState extends State<GojuonTablePage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => WordDisplayPage(
+        builder: (context) => WordSelectPage(
           wordDataList: wordDataList,
           selectedKanas: selectedKanas,
           selectedLevels: selectedLevels,
